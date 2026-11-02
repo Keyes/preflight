@@ -25,7 +25,14 @@ const bridge = useCameraBridge()
 const TONE_LABELS = { off: 'Off (clips)', neutral: 'Neutral (hue-true)', aces: 'ACES (filmic)' } as const
 
 const surfaceLabel = computed(() => `${settings.surfaceLight > 0 ? '+' : ''}${settings.surfaceLight.toFixed(1)} EV`)
-const FRACTION_TEXT: [number, string][] = [[1, '1/1'], [3 / 4, '3/4'], [2 / 3, '2/3'], [1 / 2, '1/2'], [1 / 3, '1/3'], [1 / 4, '1/4']]
+const FRACTION_TEXT: [number, string][] = [
+  [1, '1/1'],
+  [3 / 4, '3/4'],
+  [2 / 3, '2/3'],
+  [1 / 2, '1/2'],
+  [1 / 3, '1/3'],
+  [1 / 4, '1/4'],
+]
 
 /** A render size as a fraction of the display's native resolution, with its pixel size when known: "1/2 · 764 × 384 px". */
 function sizeLabel(fraction: number) {
@@ -68,7 +75,9 @@ onBeforeUnmount(() => {
     <button class="gear" :class="{ active: open }" title="Settings" aria-label="Settings" @click="layout.togglePopover('settings')">
       <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3" />
-        <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
+        <path
+          d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"
+        />
       </svg>
     </button>
 
@@ -81,37 +90,47 @@ onBeforeUnmount(() => {
             Field of view
             <output>{{ Math.round(settings.fov) }}°</output>
           </span>
-          <input
-            v-model.number="settings.fov"
-            type="range"
-            :min="FOV_MIN"
-            :max="FOV_MAX"
-            step="1"
-          />
+          <input v-model.number="settings.fov" type="range" :min="FOV_MIN" :max="FOV_MAX" step="1" />
         </label>
-        <button class="reset" :disabled="settings.fov === FOV_DEFAULT" @click="settings.resetFov()">
-          Reset to {{ FOV_DEFAULT }}°
-        </button>
+        <button class="reset" :disabled="settings.fov === FOV_DEFAULT" @click="settings.resetFov()">Reset to {{ FOV_DEFAULT }}°</button>
       </SidebarSection>
 
-      <SidebarSection id="settings.atmosphere" title="Atmosphere" tip="Haze makes beams visible in the air, and wisps make it drift and vary like real haze (0 is an even haze). Room light is a stand-in for house lights.">
+      <SidebarSection
+        id="settings.atmosphere"
+        title="Atmosphere"
+        tip="Haze makes beams visible in the air, and wisps make it drift and vary like real haze (0 is an even haze). Room light is a stand-in for house lights."
+      >
         <label class="row">
-          <span class="label"><span>Haze <span class="scope">venue</span></span><output>{{ Math.round(settings.haze * 100) }}%</output></span>
+          <span class="label"
+            ><span>Haze <span class="scope">venue</span></span
+            ><output>{{ Math.round(settings.haze * 100) }}%</output></span
+          >
           <input v-model.number="settings.haze" type="range" min="0" max="1" step="0.01" />
         </label>
         <label class="row">
-          <span class="label">Haze wisps <output>{{ Math.round(settings.hazeWisps * 100) }}%</output></span>
+          <span class="label"
+            >Haze wisps <output>{{ Math.round(settings.hazeWisps * 100) }}%</output></span
+          >
           <input v-model.number="settings.hazeWisps" type="range" min="0" max="1" step="0.01" />
         </label>
         <label class="row">
-          <span class="label"><span>Room light <span class="scope">venue</span></span><output>{{ Math.round(settings.ambient * 100) }}%</output></span>
+          <span class="label"
+            ><span>Room light <span class="scope">venue</span></span
+            ><output>{{ Math.round(settings.ambient * 100) }}%</output></span
+          >
           <input v-model.number="settings.ambient" type="range" min="0" max="1" step="0.01" />
         </label>
       </SidebarSection>
 
-      <SidebarSection id="settings.look" title="Look" tip="Surface light sets how strongly lights illuminate surfaces, separately from the beams, which helps with dark materials. Tone mapping keeps bright overlapping beams from clipping to white. Neutral keeps colors true; ACES is the filmic curve.">
+      <SidebarSection
+        id="settings.look"
+        title="Look"
+        tip="Surface light sets how strongly lights illuminate surfaces, separately from the beams, which helps with dark materials. Tone mapping keeps bright overlapping beams from clipping to white. Neutral keeps colors true; ACES is the filmic curve."
+      >
         <label class="row">
-          <span class="label">Surface light <output>{{ surfaceLabel }}</output></span>
+          <span class="label"
+            >Surface light <output>{{ surfaceLabel }}</output></span
+          >
           <input v-model.number="settings.surfaceLight" type="range" :min="SURFACE_LIGHT_MIN" :max="SURFACE_LIGHT_MAX" step="0.1" />
         </label>
         <label class="row">
@@ -121,16 +140,24 @@ onBeforeUnmount(() => {
           </select>
         </label>
         <label class="row">
-          <span class="label">Exposure <output>{{ exposureLabel }}</output></span>
+          <span class="label"
+            >Exposure <output>{{ exposureLabel }}</output></span
+          >
           <input v-model.number="settings.exposure" type="range" :min="EXPOSURE_MIN" :max="EXPOSURE_MAX" step="0.1" />
         </label>
         <label class="row">
-          <span class="label">Bloom <output>{{ Math.round(settings.bloom * 100) }}%</output></span>
+          <span class="label"
+            >Bloom <output>{{ Math.round(settings.bloom * 100) }}%</output></span
+          >
           <input v-model.number="settings.bloom" type="range" min="0" max="1" step="0.01" />
         </label>
       </SidebarSection>
 
-      <SidebarSection id="settings.quality" title="Quality" :tip="`Shadows are limited to ${MAX_SHADOW_LIGHTS} lights at once (choose which in a light's panel), and the others stay unshadowed. Sizes are fractions of the width and height of your display's native resolution, so 1/2 renders a quarter of the pixels. Moving the view or a light lowers the size only as far as needed to stay near 30 fps, down to the lowest size chosen.`">
+      <SidebarSection
+        id="settings.quality"
+        title="Quality"
+        :tip="`Shadows are limited to ${MAX_SHADOW_LIGHTS} lights at once (choose which in a light's panel), and the others stay unshadowed. Sizes are fractions of the width and height of your display's native resolution, so 1/2 renders a quarter of the pixels. Moving the view or a light lowers the size only as far as needed to stay near 30 fps, down to the lowest size chosen.`"
+      >
         <label class="row">
           <span class="label">Size when still</span>
           <select v-model.number="settings.renderRest">
@@ -159,7 +186,11 @@ onBeforeUnmount(() => {
         </label>
       </SidebarSection>
 
-      <SidebarSection id="settings.prefs" title="Preferences" tip="A screenshot is one frame of the live view rendered at its own size, always 16:9: the middle part of what you see (a wide window loses its sides, a narrow one its top and bottom).">
+      <SidebarSection
+        id="settings.prefs"
+        title="Preferences"
+        tip="A screenshot is one frame of the live view rendered at its own size, always 16:9: the middle part of what you see (a wide window loses its sides, a narrow one its top and bottom)."
+      >
         <label class="check" title="Stops haze drift, gobo spin, strobe flashes and the crowd, for a still picture and less work (P)">
           <input v-model="settings.animate" type="checkbox" />
           <span>Animations <kbd>P</kbd></span>

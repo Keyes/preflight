@@ -46,7 +46,13 @@ test('a drawn direction turns with the plan: up the page is world +z when the pl
 })
 
 test('rotateYTo takes the +Y axis to the wanted direction', () => {
-  for (const to of [[0, -1, 0], [0, 1, 0], [1, 0, 0], [0, 0, -1], [0.6, -0.64, 0.48]] as [number, number, number][]) {
+  for (const to of [
+    [0, -1, 0],
+    [0, 1, 0],
+    [1, 0, 0],
+    [0, 0, -1],
+    [0.6, -0.64, 0.48],
+  ] as [number, number, number][]) {
     const len = Math.hypot(...to)
     const unit = to.map((n) => n / len) as [number, number, number]
     const out = rotate(rotateYTo(unit), [0, 1, 0])
@@ -64,5 +70,21 @@ test('a hanging light points down by default and along its drawn direction, tilt
 })
 
 test('the plan scale follows from the stage line', () => {
-  near(scaleFromStage({ page: 2, image: { width: 1, height: 1 }, trusses: {}, stage: { width: 10, depth: 4.7, height: 0.6, planPx: [[0, 50], [2000, 50]] } })!, 0.005)
+  near(
+    scaleFromStage({
+      page: 2,
+      image: { width: 1, height: 1 },
+      trusses: {},
+      stage: {
+        width: 10,
+        depth: 4.7,
+        height: 0.6,
+        planPx: [
+          [0, 50],
+          [2000, 50],
+        ],
+      },
+    })!,
+    0.005,
+  )
 })

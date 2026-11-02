@@ -41,7 +41,17 @@ function showAll() {
           :aria-label="hidden.has(tag) ? `Show ${tag}` : `Hide ${tag}`"
           @click="venues.setTagHidden(tag, !hidden.has(tag))"
         >
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path :d="eye" />
             <path v-if="hidden.has(tag)" d="M3 3l18 18" />
           </svg>

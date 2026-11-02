@@ -188,11 +188,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 <template>
   <SidebarSection v-if="store.current?.status === 'ready'" id="fixtures" title="Fixtures" :tip="fixturesTip">
     <template #actions>
-      <button class="primary" :class="{ on: rig.placing }" :title="rig.placing ? 'Stop placing (Esc)' : 'Pick a fixture, then click where it hangs'" @click="rig.togglePlacing()">
+      <button
+        class="primary"
+        :class="{ on: rig.placing }"
+        :title="rig.placing ? 'Stop placing (Esc)' : 'Pick a fixture, then click where it hangs'"
+        @click="rig.togglePlacing()"
+      >
         {{ rig.placing ? 'Cancel' : '+ Place light' }}
       </button>
       <button class="more" title="More ways to add lights" aria-label="More ways to add lights" aria-haspopup="menu" @click="openMore">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.8" /><circle cx="12" cy="12" r="1.8" /><circle cx="19" cy="12" r="1.8" /></svg>
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">
+          <circle cx="5" cy="12" r="1.8" />
+          <circle cx="12" cy="12" r="1.8" />
+          <circle cx="19" cy="12" r="1.8" />
+        </svg>
       </button>
     </template>
 
@@ -211,21 +220,20 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 
     <ul v-if="shown.length" ref="list" class="list">
       <li v-for="fixture in shown" :key="fixture.id" :data-id="fixture.id" @contextmenu="openMenu($event, fixture.id)">
-        <InlineRename
-          v-if="renamingId === fixture.id"
-          :initial="fixture.name"
-          @commit="commitRename(fixture.id, $event)"
-          @cancel="renamingId = null"
-        />
+        <InlineRename v-if="renamingId === fixture.id" :initial="fixture.name" @commit="commitRename(fixture.id, $event)" @cancel="renamingId = null" />
         <button v-else :class="{ active: rig.isSelected(fixture.id) }" :title="typeName(fixture)" @click="onRowClick($event, fixture.id)">
           <FixtureIcon :fixture="fixture" />
           <span class="name">{{ fixture.name }}</span>
-          <span v-if="fixture.patch" class="address" :title="`DMX universe ${fixture.patch.universe}, address ${fixture.patch.address}`">{{ fixture.patch.universe }}.{{ fixture.patch.address }}</span>
+          <span v-if="fixture.patch" class="address" :title="`DMX universe ${fixture.patch.universe}, address ${fixture.patch.address}`"
+            >{{ fixture.patch.universe }}.{{ fixture.patch.address }}</span
+          >
         </button>
       </li>
     </ul>
 
-    <p v-if="!rig.fixtures.length" class="hint">No lights yet. “+ Place light” picks one from the fixture library; the ⋯ menu imports a tech rider or lights from another venue.</p>
+    <p v-if="!rig.fixtures.length" class="hint">
+      No lights yet. “+ Place light” picks one from the fixture library; the ⋯ menu imports a tech rider or lights from another venue.
+    </p>
 
     <ContextMenu v-if="menu" :x="menu.x" :y="menu.y" :items="menuItems(menu.id)" @close="menu = null" />
     <ContextMenu v-if="moreMenu" :x="moreMenu.x" :y="moreMenu.y" :items="moreItems" @close="moreMenu = null" />

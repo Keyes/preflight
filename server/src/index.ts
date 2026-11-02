@@ -40,8 +40,7 @@ const PORT = Number(process.env.PORT ?? 3001)
 const HOST = process.env.HOST ?? '127.0.0.1'
 const MAX_UPLOAD = 500 * 1024 * 1024
 
-const isVec3 = (v: unknown): v is [number, number, number] =>
-  Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n))
+const isVec3 = (v: unknown): v is [number, number, number] => Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n))
 
 function cleanViews(value: unknown): CameraView[] {
   if (!Array.isArray(value) || value.length > 100) throw new HttpError(400, 'views must be an array of at most 100')
@@ -92,7 +91,17 @@ function cleanCrowd(value: unknown): Crowd {
     if (![raw.x0, raw.z0, raw.x1, raw.z1, raw.y].every(coord)) throw new HttpError(400, 'invalid crowd zone corners')
     const facing = raw.facing
     if (facing !== null && !(Array.isArray(facing) && facing.length === 2 && facing.every(coord))) throw new HttpError(400, 'invalid crowd facing')
-    return { id, name: cleanName(raw.name), x0: raw.x0, z0: raw.z0, x1: raw.x1, z1: raw.z1, y: raw.y, facing: facing === null ? null : [facing[0], facing[1]], shown: raw.shown !== false }
+    return {
+      id,
+      name: cleanName(raw.name),
+      x0: raw.x0,
+      z0: raw.z0,
+      x1: raw.x1,
+      z1: raw.z1,
+      y: raw.y,
+      facing: facing === null ? null : [facing[0], facing[1]],
+      shown: raw.shown !== false,
+    }
   })
   return { shown: v.shown, density: v.density, motion: v.motion as Crowd['motion'], intensity: v.intensity, zones }
 }
@@ -155,7 +164,14 @@ function cleanFixtures(value: unknown): Fixture[] {
 function cleanPatch(value: unknown): FixturePatch {
   const v = (value ?? {}) as Partial<FixturePatch>
   const text = (s: unknown) => typeof s === 'string' && s.length > 0 && s.length <= 40
-  if (!text(v.fixId) || !Number.isInteger(v.universe) || (v.universe as number) < 1 || !Number.isInteger(v.address) || (v.address as number) < 1 || (v.address as number) > 512) {
+  if (
+    !text(v.fixId) ||
+    !Number.isInteger(v.universe) ||
+    (v.universe as number) < 1 ||
+    !Number.isInteger(v.address) ||
+    (v.address as number) < 1 ||
+    (v.address as number) > 512
+  ) {
     throw new HttpError(400, 'invalid fixture patch')
   }
   const patch: FixturePatch = { fixId: v.fixId as string, universe: v.universe as number, address: v.address as number }
@@ -289,7 +305,11 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
         return sendJson(res, 422, { error: `The model could not be converted: ${(err as Error).message}` })
       }
       await rename(nextGlb, glbPath(id))
-      return sendJson(res, 200, await updateVenue(id, { converterVersion: version, modelHash: `${venue.modelHash ?? ''}`.replace(/\+.*$/, '') + `+${Date.now()}` }))
+      return sendJson(
+        res,
+        200,
+        await updateVenue(id, { converterVersion: version, modelHash: `${venue.modelHash ?? ''}`.replace(/\+.*$/, '') + `+${Date.now()}` }),
+      )
     }
 
     if (sub === 'views' && method === 'PUT') {
@@ -301,10 +321,7 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
     if (sub === 'append' && method === 'POST') {
       const body = await readJson(req, 1024 * 1024)
       const fixtures = cleanFixtures([...(venue.fixtures ?? []), ...(Array.isArray(body.fixtures) ? body.fixtures : [])])
-      const groups = cleanGroups(
-        [...(venue.groups ?? []), ...(Array.isArray(body.groups) ? body.groups : [])],
-        new Set(fixtures.map((f) => f.id)),
-      )
+      const groups = cleanGroups([...(venue.groups ?? []), ...(Array.isArray(body.groups) ? body.groups : [])], new Set(fixtures.map((f) => f.id)))
       const patch: Partial<Venue> = { fixtures, groups }
       // crowd zones come along too; the crowd's options stay as they are (a venue without a crowd gets the defaults)
       if (Array.isArray(body.zones) && body.zones.length) {
@@ -338,7 +355,11 @@ async function handle(req: IncomingMessage, res: ServerResponse) {
         }
         await rename(nextGlb, glbPath(id))
         await rm(skpPath(id), { force: true }) // a SketchUp file from before would no longer match the model
-        return sendJson(res, 200, await updateVenue(id, { status: 'ready', modelFormat: 'glb', modelHash: hash, converterVersion: undefined, error: undefined }))
+        return sendJson(
+          res,
+          200,
+          await updateVenue(id, { status: 'ready', modelFormat: 'glb', modelHash: hash, converterVersion: undefined, error: undefined }),
+        )
       }
       if (venue.status === 'ready') {
         // Replacing the model of a working venue: convert the new file on the side, and only swap it in when that worked,

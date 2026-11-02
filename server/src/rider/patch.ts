@@ -129,7 +129,8 @@ export function checkPatch(rows: readonly RiderPatchRow[]): string[] {
     const same = seen.get(row.fixId)
     if (same) issues.push(`${row.fixId} is in the patch twice (${same.name}, ${row.name})`)
     seen.set(row.fixId, row)
-    if (row.address < 1 || row.address + (row.channels ?? 1) - 1 > 512) issues.push(`${row.fixId} ${row.name}: address ${row.address} does not fit in a universe`)
+    if (row.address < 1 || row.address + (row.channels ?? 1) - 1 > 512)
+      issues.push(`${row.fixId} ${row.name}: address ${row.address} does not fit in a universe`)
   }
   const byAddress = [...rows].sort((a, b) => a.universe - b.universe || a.address - b.address)
   for (let i = 1; i < byAddress.length; i++) {

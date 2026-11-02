@@ -65,7 +65,9 @@ const manufacturerCounts = computed(() => {
 })
 
 const results = computed<CatalogFixture[]>(() => {
-  const tokens = fold(query.value).split(/[\s/_-]+/).filter(Boolean)
+  const tokens = fold(query.value)
+    .split(/[\s/_-]+/)
+    .filter(Boolean)
   const tests = required.value.map((key) => FEATURES.find((f) => f.key === key)!.test)
   const scored: { item: CatalogFixture; score: number }[] = []
   for (const entry of entries.value) {
@@ -89,7 +91,12 @@ const results = computed<CatalogFixture[]>(() => {
   }
   const byName = (a: CatalogFixture, b: CatalogFixture) =>
     a.manufacturer.localeCompare(b.manufacturer) || a.name.localeCompare(b.name, undefined, { numeric: true })
-  scored.sort((a, b) => (tokens.length ? b.score - a.score : 0) || (a.item.id === 'generic-moving-head' ? -1 : b.item.id === 'generic-moving-head' ? 1 : 0) || byName(a.item, b.item))
+  scored.sort(
+    (a, b) =>
+      (tokens.length ? b.score - a.score : 0) ||
+      (a.item.id === 'generic-moving-head' ? -1 : b.item.id === 'generic-moving-head' ? 1 : 0) ||
+      byName(a.item, b.item),
+  )
   return scored.map((s) => s.item)
 })
 
@@ -136,6 +143,12 @@ function place() {
   rig.startPlacing(item.id, item.modes.length ? modeName.value : undefined)
 }
 
+/** A double click in the list: choose that fixture and start placing it. */
+function placeItem(id: string) {
+  select(id)
+  place()
+}
+
 function close() {
   rig.pickerOpen = false
 }
@@ -173,7 +186,7 @@ onMounted(() => {
   } catch {
     /* ignore */
   }
-  selectedId.value = entries.value.some((e) => e.item.id === last.id) ? (last.id as string) : results.value[0]?.id ?? null
+  selectedId.value = entries.value.some((e) => e.item.id === last.id) ? (last.id as string) : (results.value[0]?.id ?? null)
   const item = selected.value
   modeName.value = item?.modes.find((m) => m.name === last.mode)?.name ?? item?.modes[0]?.name ?? ''
   void nextTick(() => {
@@ -215,23 +228,24 @@ const NOT_SIMULATED: Record<string, string> = {
   wheel: 'Wheels',
 }
 
-const notSimulated = computed(() => (selected.value ? Object.keys(NOT_SIMULATED).filter((k) => selected.value!.features.includes(k)).map((k) => NOT_SIMULATED[k]) : []))
+const notSimulated = computed(() =>
+  selected.value
+    ? Object.keys(NOT_SIMULATED)
+        .filter((k) => selected.value!.features.includes(k))
+        .map((k) => NOT_SIMULATED[k])
+    : [],
+)
 
 const simulated = computed(() => {
   const c = profile.value?.controls
   if (!c) return []
-  return [
-    'Dimmer',
-    c.color && 'Color',
-    c.pan && 'Pan',
-    c.tilt && 'Tilt',
-    c.zoom && 'Zoom',
-    c.focus && 'Focus',
-  ].filter(Boolean) as string[]
+  return ['Dimmer', c.color && 'Color', c.pan && 'Pan', c.tilt && 'Tilt', c.zoom && 'Zoom', c.focus && 'Focus'].filter(Boolean) as string[]
 })
 
 const mode = computed(() => selected.value?.modes.find((m) => m.name === modeName.value) ?? selected.value?.modes[0])
-const libraryUrl = computed(() => (selected.value && selected.value.id !== 'generic-moving-head' ? `https://open-fixture-library.org/${selected.value.id}` : ''))
+const libraryUrl = computed(() =>
+  selected.value && selected.value.id !== 'generic-moving-head' ? `https://open-fixture-library.org/${selected.value.id}` : '',
+)
 </script>
 
 <template>
@@ -253,7 +267,7 @@ const libraryUrl = computed(() => (selected.value && selected.value.id !== 'gene
       <div v-if="catalog.status === 'loading' || catalog.status === 'idle'" class="state">Loading the fixture library…</div>
       <div v-else-if="catalog.status === 'error'" class="state error">
         Could not load the fixture library: {{ catalog.error }}
-        <button class="link" @click="catalog.status = 'idle'; catalog.load()">Try again</button>
+        <button class="link" @click="catalog.load()">Try again</button>
       </div>
 
       <div v-else class="body">
@@ -261,12 +275,7 @@ const libraryUrl = computed(() => (selected.value && selected.value.id !== 'gene
           <section>
             <h3>Type</h3>
             <div class="chips">
-              <button
-                v-for="[name, count] in categoryCounts"
-                :key="name"
-                :class="{ on: categories.includes(name) }"
-                @click="toggle(categories, name)"
-              >
+              <button v-for="[name, count] in categoryCounts" :key="name" :class="{ on: categories.includes(name) }" @click="toggle(categories, name)">
                 {{ name }} <span class="count">{{ count }}</span>
               </button>
             </div>
@@ -298,13 +307,15 @@ const libraryUrl = computed(() => (selected.value && selected.value.id !== 'gene
                 role="option"
                 :aria-selected="item.id === selectedId"
                 @click="select(item.id)"
-                @dblclick="select(item.id); place()"
+                @dblclick="placeItem(item.id)"
               >
                 <span class="line">
                   <span class="maker">{{ item.manufacturer }}</span>
                   <span class="name">{{ item.name }}</span>
                 </span>
-                <span class="meta">{{ item.categories.join(', ') }}<template v-if="summary(item)"> · {{ summary(item) }}</template></span>
+                <span class="meta"
+                  >{{ item.categories.join(', ') }}<template v-if="summary(item)"> · {{ summary(item) }}</template></span
+                >
               </button>
             </li>
             <li v-if="results.length === 0" class="empty">

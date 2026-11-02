@@ -96,7 +96,15 @@ export class FixtureHistory {
     this.redoSteps.length = 0
 
     const count = changes.size
-    const step: HistoryStep = { label: count > 1 ? `${label} (${count} lights)` : label, key, time: now, changes, orderBefore, orderAfter, ...(groupsStep ? { groups: groupsStep } : {}) }
+    const step: HistoryStep = {
+      label: count > 1 ? `${label} (${count} lights)` : label,
+      key,
+      time: now,
+      changes,
+      orderBefore,
+      orderAfter,
+      ...(groupsStep ? { groups: groupsStep } : {}),
+    }
     const top = this.undoSteps[this.undoSteps.length - 1]
     if (key && top && top.key === key && now - top.time < COALESCE_MS) {
       // The same kind of edit again: extend the previous step instead of adding another.

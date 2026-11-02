@@ -14,7 +14,17 @@ const crowd = useCrowd()
     :aria-label="crowd.crowd.shown ? 'Hide the crowd' : 'Show the crowd'"
     @click="crowd.setShown(!crowd.crowd.shown)"
   >
-    <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      width="17"
+      height="17"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      aria-hidden="true"
+    >
       <circle cx="9" cy="7" r="3" />
       <path d="M3 20v-1.5A4.5 4.5 0 0 1 7.5 14h3A4.5 4.5 0 0 1 15 18.5V20" />
       <circle cx="17.5" cy="8.5" r="2.4" />

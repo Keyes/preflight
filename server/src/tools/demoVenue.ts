@@ -85,12 +85,44 @@ class Part {
   box(material: MaterialKey, min: V3, max: V3, skip: ('bottom' | 'top')[] = []) {
     const [x0, y0, z0] = min
     const [x1, y1, z1] = max
-    this.polygon(material, [[x0, y0, z1], [x1, y0, z1], [x1, y1, z1], [x0, y1, z1]]) // +z
-    this.polygon(material, [[x1, y0, z0], [x0, y0, z0], [x0, y1, z0], [x1, y1, z0]]) // -z
-    this.polygon(material, [[x1, y0, z1], [x1, y0, z0], [x1, y1, z0], [x1, y1, z1]]) // +x
-    this.polygon(material, [[x0, y0, z0], [x0, y0, z1], [x0, y1, z1], [x0, y1, z0]]) // -x
-    if (!skip.includes('top')) this.polygon(material, [[x0, y1, z1], [x1, y1, z1], [x1, y1, z0], [x0, y1, z0]])
-    if (!skip.includes('bottom')) this.polygon(material, [[x0, y0, z0], [x1, y0, z0], [x1, y0, z1], [x0, y0, z1]])
+    this.polygon(material, [
+      [x0, y0, z1],
+      [x1, y0, z1],
+      [x1, y1, z1],
+      [x0, y1, z1],
+    ]) // +z
+    this.polygon(material, [
+      [x1, y0, z0],
+      [x0, y0, z0],
+      [x0, y1, z0],
+      [x1, y1, z0],
+    ]) // -z
+    this.polygon(material, [
+      [x1, y0, z1],
+      [x1, y0, z0],
+      [x1, y1, z0],
+      [x1, y1, z1],
+    ]) // +x
+    this.polygon(material, [
+      [x0, y0, z0],
+      [x0, y0, z1],
+      [x0, y1, z1],
+      [x0, y1, z0],
+    ]) // -x
+    if (!skip.includes('top'))
+      this.polygon(material, [
+        [x0, y1, z1],
+        [x1, y1, z1],
+        [x1, y1, z0],
+        [x0, y1, z0],
+      ])
+    if (!skip.includes('bottom'))
+      this.polygon(material, [
+        [x0, y0, z0],
+        [x1, y0, z0],
+        [x1, y0, z1],
+        [x0, y0, z1],
+      ])
   }
 
   /** A round tube from `a` to `b`, as a prism with `sides` faces (no caps: tubes meet other tubes or the floor). */
@@ -171,19 +203,49 @@ function buildParts(): Part[] {
   const { x0, x1, z0, z1, height } = ROOM
 
   const room = new Part('Floor')
-  room.polygon('floor', [[x0, 0, z1], [x1, 0, z1], [x1, 0, z0], [x0, 0, z0]])
+  room.polygon('floor', [
+    [x0, 0, z1],
+    [x1, 0, z1],
+    [x1, 0, z0],
+    [x0, 0, z0],
+  ])
 
   const walls = new Part('Walls')
-  walls.polygon('wall', [[x0, 0, z0], [x1, 0, z0], [x1, height, z0], [x0, height, z0]])
-  walls.polygon('wall', [[x1, 0, z1], [x0, 0, z1], [x0, height, z1], [x1, height, z1]])
-  walls.polygon('wall', [[x0, 0, z1], [x0, 0, z0], [x0, height, z0], [x0, height, z1]])
-  walls.polygon('wall', [[x1, 0, z0], [x1, 0, z1], [x1, height, z1], [x1, height, z0]])
+  walls.polygon('wall', [
+    [x0, 0, z0],
+    [x1, 0, z0],
+    [x1, height, z0],
+    [x0, height, z0],
+  ])
+  walls.polygon('wall', [
+    [x1, 0, z1],
+    [x0, 0, z1],
+    [x0, height, z1],
+    [x1, height, z1],
+  ])
+  walls.polygon('wall', [
+    [x0, 0, z1],
+    [x0, 0, z0],
+    [x0, height, z0],
+    [x0, height, z1],
+  ])
+  walls.polygon('wall', [
+    [x1, 0, z0],
+    [x1, 0, z1],
+    [x1, height, z1],
+    [x1, height, z0],
+  ])
   // a door at the back of the room, with its exit sign
   walls.box('desk', [-6.6, 0, z1 - 0.06], [-5.0, 2.25, z1], ['bottom'])
   walls.box('exit', [-6.15, 2.4, z1 - 0.08], [-5.45, 2.65, z1])
 
   const ceiling = new Part('Ceiling')
-  ceiling.polygon('ceiling', [[x0, height, z0], [x1, height, z0], [x1, height, z1], [x0, height, z1]])
+  ceiling.polygon('ceiling', [
+    [x0, height, z0],
+    [x1, height, z0],
+    [x1, height, z1],
+    [x0, height, z1],
+  ])
 
   const stage = new Part('Stage')
   stage.box('stage', [STAGE.x0, STAGE.height - 0.05, STAGE.z0], [STAGE.x1, STAGE.height, STAGE.z1], [])
@@ -231,7 +293,12 @@ function buildParts(): Part[] {
   const foh = new Part('FOH')
   foh.box('stage', [-2.2, 0, 6.4], [2.2, 0.2, 8.6], ['bottom'])
   foh.box('desk', [-1.6, 0.2, 7.0], [1.6, 0.95, 7.75], ['bottom'])
-  foh.polygon('grille', [[-1.6, 0.95, 7.75], [1.6, 0.95, 7.75], [1.6, 1.05, 7.15], [-1.6, 1.05, 7.15]]) // sloped console
+  foh.polygon('grille', [
+    [-1.6, 0.95, 7.75],
+    [1.6, 0.95, 7.75],
+    [1.6, 1.05, 7.15],
+    [-1.6, 1.05, 7.15],
+  ]) // sloped console
 
   const columns = new Part('Columns')
   for (const x of [-7.6, 7.6]) columns.box('column', [x - 0.25, 0, 3.75], [x + 0.25, height, 4.25], ['bottom', 'top'])
@@ -407,9 +474,7 @@ async function buildPreset(): Promise<DemoPreset> {
   )
   rig(
     'Beams (back truss)',
-    [-4.5, -1.5, 1.5, 4.5].map((x, i) =>
-      mover(`Beam ${i + 1}`, 'clay-paky/sharpy', [x, HANG_Y, RIG.back], 'hanging', [x * 2.2, 0, 2.5], { dimmer: 1 }),
-    ),
+    [-4.5, -1.5, 1.5, 4.5].map((x, i) => mover(`Beam ${i + 1}`, 'clay-paky/sharpy', [x, HANG_Y, RIG.back], 'hanging', [x * 2.2, 0, 2.5], { dimmer: 1 })),
   )
   rig(
     'Floor beams',
@@ -457,4 +522,6 @@ await mkdir(OUT_DIR, { recursive: true })
 await writeFile(new URL('demo-club.glb', `file://${OUT_DIR}`), glb)
 await writeFile(new URL('demo-club.json', `file://${OUT_DIR}`), `${JSON.stringify(preset, null, 2)}\n`)
 const triangles = parts.reduce((sum, p) => sum + [...p.triangles.values()].reduce((s, t) => s + t.positions.length / 9, 0), 0)
-console.log(`demo-club.glb: ${(glb.length / 1024).toFixed(0)} KB, ${triangles} triangles in ${parts.length} parts; demo-club.json: ${preset.fixtures.length} lights`)
+console.log(
+  `demo-club.glb: ${(glb.length / 1024).toFixed(0)} KB, ${triangles} triangles in ${parts.length} parts; demo-club.json: ${preset.fixtures.length} lights`,
+)

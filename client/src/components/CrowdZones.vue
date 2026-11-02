@@ -77,8 +77,24 @@ const eye = 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6
 
     <ul v-if="crowd.zones.length">
       <li v-for="zone in crowd.zones" :key="zone.id" @contextmenu="openMenu($event, zone.id)">
-        <button class="eye" :class="{ off: !zone.shown }" :title="zone.shown ? 'Hide this zone' : 'Show this zone'" :aria-label="zone.shown ? 'Hide this zone' : 'Show this zone'" @click="crowd.toggleZone(zone.id)">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <button
+          class="eye"
+          :class="{ off: !zone.shown }"
+          :title="zone.shown ? 'Hide this zone' : 'Show this zone'"
+          :aria-label="zone.shown ? 'Hide this zone' : 'Show this zone'"
+          @click="crowd.toggleZone(zone.id)"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="14"
+            height="14"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
             <path :d="eye" />
             <path v-if="!zone.shown" d="M3 3l18 18" />
           </svg>
@@ -98,19 +114,61 @@ const eye = 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6
         <span>Show the crowd <kbd>C</kbd></span>
       </label>
       <label class="row">
-        <span class="label">Density <output>{{ percent }}%</output></span>
-        <input type="range" min="0" max="1" step="0.01" :value="crowd.crowd.density" :disabled="!crowd.crowd.shown" :title="'100% is a packed standing crowd, about 4 people per square meter, up to 4,000 people in all'" @input="crowd.setDensity(Number(($event.target as HTMLInputElement).value))" />
+        <span class="label"
+          >Density <output>{{ percent }}%</output></span
+        >
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="crowd.crowd.density"
+          :disabled="!crowd.crowd.shown"
+          :title="'100% is a packed standing crowd, about 4 people per square meter, up to 4,000 people in all'"
+          @input="crowd.setDensity(Number(($event.target as HTMLInputElement).value))"
+        />
       </label>
       <div class="segments" role="group" aria-label="Density presets">
-        <button v-for="p in PRESETS" :key="p" :class="{ on: Math.abs(crowd.crowd.density - p) < 0.005 }" :disabled="!crowd.crowd.shown" @click="crowd.setDensity(p)">{{ Math.round(p * 100) }}%</button>
+        <button
+          v-for="p in PRESETS"
+          :key="p"
+          :class="{ on: Math.abs(crowd.crowd.density - p) < 0.005 }"
+          :disabled="!crowd.crowd.shown"
+          @click="crowd.setDensity(p)"
+        >
+          {{ Math.round(p * 100) }}%
+        </button>
       </div>
       <span class="label">Movement</span>
-      <div class="segments" role="group" aria-label="Movement" title="Sway leans people gently. Dance adds a bounce on every beat at 120 bpm. Pausing animations (P) freezes them too.">
-        <button v-for="m in MOTIONS" :key="m.value" :class="{ on: crowd.crowd.motion === m.value }" :disabled="!crowd.crowd.shown" @click="crowd.setMotion(m.value)">{{ m.label }}</button>
+      <div
+        class="segments"
+        role="group"
+        aria-label="Movement"
+        title="Sway leans people gently. Dance adds a bounce on every beat at 120 bpm. Pausing animations (P) freezes them too."
+      >
+        <button
+          v-for="m in MOTIONS"
+          :key="m.value"
+          :class="{ on: crowd.crowd.motion === m.value }"
+          :disabled="!crowd.crowd.shown"
+          @click="crowd.setMotion(m.value)"
+        >
+          {{ m.label }}
+        </button>
       </div>
       <label v-if="crowd.crowd.motion !== 'still'" class="row">
-        <span class="label">Intensity <output>{{ Math.round(crowd.crowd.intensity * 100) }}%</output></span>
-        <input type="range" min="0" max="1" step="0.01" :value="crowd.crowd.intensity" :disabled="!crowd.crowd.shown" @input="crowd.setIntensity(Number(($event.target as HTMLInputElement).value))" />
+        <span class="label"
+          >Intensity <output>{{ Math.round(crowd.crowd.intensity * 100) }}%</output></span
+        >
+        <input
+          type="range"
+          min="0"
+          max="1"
+          step="0.01"
+          :value="crowd.crowd.intensity"
+          :disabled="!crowd.crowd.shown"
+          @input="crowd.setIntensity(Number(($event.target as HTMLInputElement).value))"
+        />
       </label>
     </div>
 

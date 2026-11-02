@@ -27,7 +27,9 @@ const tabs = computed<{ id: SidebarTab; label: string; count: number }[]>(() => 
 
 /** Size of the model and anything about its scale or position that looks wrong. */
 const check = computed(() => (venueBox.box && store.current?.status === 'ready' ? checkVenue(venueBox.box, store.current.fixtures ?? []) : null))
-const sizeText = computed(() => (check.value ? `${check.value.size[0].toFixed(1)} × ${check.value.size[2].toFixed(1)} m, ${check.value.size[1].toFixed(1)} m high` : ''))
+const sizeText = computed(() =>
+  check.value ? `${check.value.size[0].toFixed(1)} × ${check.value.size[2].toFixed(1)} m, ${check.value.size[1].toFixed(1)} m high` : '',
+)
 </script>
 
 <template>
@@ -41,7 +43,20 @@ const sizeText = computed(() => (check.value ? `${check.value.size[0].toFixed(1)
       <span class="label">Venue</span>
       <span class="title">
         <span class="name">{{ store.current?.name ?? (store.loading ? 'Loading…' : 'No venue yet') }}</span>
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m7 15 5 5 5-5" /><path d="m7 9 5-5 5 5" /></svg>
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="m7 15 5 5 5-5" />
+          <path d="m7 9 5-5 5 5" />
+        </svg>
       </span>
       <span v-if="store.current && store.current.status !== 'ready'" class="badge" :class="store.current.status">
         {{ store.current.status === 'error' ? 'conversion failed' : 'no model yet' }}
@@ -49,25 +64,23 @@ const sizeText = computed(() => (check.value ? `${check.value.size[0].toFixed(1)
     </button>
     <p v-if="check" class="size" :class="{ warn: check.warnings.length }">
       <span>{{ sizeText }}</span>
+      <InfoTip v-if="check.warnings.length" :text="check.warnings.join(' ')" label="Problems with this venue's scale or position" />
       <InfoTip
-        v-if="check.warnings.length"
-        :text="check.warnings.join(' ')"
-        label="Problems with this venue's scale or position"
+        v-else
+        :text="
+          [
+            'Width × depth, and height, of the model in meters. Nothing about its scale or position looks wrong: it is room-sized and every light stands inside it.',
+            ...check.notes,
+          ].join(' ')
+        "
+        label="About the model size"
       />
-      <InfoTip v-else :text="['Width × depth, and height, of the model in meters. Nothing about its scale or position looks wrong: it is room-sized and every light stands inside it.', ...check.notes].join(' ')" label="About the model size" />
     </p>
     <p v-if="store.error" class="error">{{ store.error }}</p>
 
     <!-- The venue's contents in three pages. Hidden pages stay mounted (v-show): their panels own keyboard shortcuts. -->
     <nav v-if="store.current?.status === 'ready'" class="tabs" role="tablist" aria-label="Venue contents">
-      <button
-        v-for="t in tabs"
-        :key="t.id"
-        role="tab"
-        :aria-selected="layout.tab === t.id"
-        :class="{ on: layout.tab === t.id }"
-        @click="layout.tab = t.id"
-      >
+      <button v-for="t in tabs" :key="t.id" role="tab" :aria-selected="layout.tab === t.id" :class="{ on: layout.tab === t.id }" @click="layout.tab = t.id">
         {{ t.label }}<span v-if="t.count" class="tabcount">{{ t.count }}</span>
       </button>
     </nav>

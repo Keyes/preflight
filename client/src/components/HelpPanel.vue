@@ -69,13 +69,17 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="help">
-    <button class="icon" :class="{ active: open }" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" @click="layout.togglePopover('help')">?</button>
+    <button class="icon" :class="{ active: open }" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" @click="layout.togglePopover('help')">
+      ?
+    </button>
     <div v-if="open" class="panel" role="dialog" aria-label="Keyboard shortcuts">
       <section v-for="g in groups" :key="g.title">
         <h2>{{ g.title }}</h2>
         <dl>
           <template v-for="[key, what] in g.keys" :key="key">
-            <dt><kbd>{{ key }}</kbd></dt>
+            <dt>
+              <kbd>{{ key }}</kbd>
+            </dt>
             <dd>{{ what }}</dd>
           </template>
         </dl>

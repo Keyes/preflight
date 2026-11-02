@@ -619,7 +619,9 @@ function enterTopDown(): (() => void) | null {
   const center = bounds.min.add(bounds.max).scale(0.5)
   const meshes = new Set(venue.meshes)
   // the floor: the first surface met going up from below the model (a ray down from above would meet the roof)
-  const floorHit = scene.pickWithRay(new Ray(new Vector3(center.x, bounds.min.y - 1, center.z), Vector3.Up(), bounds.max.y - bounds.min.y + 2), (m) => meshes.has(m))
+  const floorHit = scene.pickWithRay(new Ray(new Vector3(center.x, bounds.min.y - 1, center.z), Vector3.Up(), bounds.max.y - bounds.min.y + 2), (m) =>
+    meshes.has(m),
+  )
   const floorY = floorHit?.hit && floorHit.pickedPoint ? floorHit.pickedPoint.y : bounds.min.y
   const halfW = (bounds.max.x - bounds.min.x) / 2
   const halfD = (bounds.max.z - bounds.min.z) / 2
@@ -762,7 +764,10 @@ function setPlanClutter(hidden: boolean) {
     planClutter = []
   }
 }
-watch(() => riderStore.hideClutter, (hidden) => setPlanClutter(hidden))
+watch(
+  () => riderStore.hideClutter,
+  (hidden) => setPlanClutter(hidden),
+)
 
 /** A quarter turn of the plan view, for venues whose stage is not at the top of the screen. */
 watch(
@@ -869,7 +874,8 @@ function riderMarkerClick(add: boolean): boolean {
 function updateRiderPreview() {
   for (const marker of riderRefMarkers) marker.dispose()
   riderRefMarkers = []
-  const drafts = riderStore.open && riderStore.step !== 'load' ? (riderStore.result?.drafts ?? []).filter((d) => d.placement && !riderStore.excluded.has(d.key)) : []
+  const drafts =
+    riderStore.open && riderStore.step !== 'load' ? (riderStore.result?.drafts ?? []).filter((d) => d.placement && !riderStore.excluded.has(d.key)) : []
   const wanted = new Set(drafts.map((d) => d.key))
   for (const [key, marker] of riderMarkers) {
     if (!wanted.has(key)) {
@@ -888,7 +894,11 @@ function updateRiderPreview() {
     const [x, y, z] = riderStore.positionOf(d)
     marker.position.set(x, y, z)
     const selected = riderStore.selectedKeys.includes(d.key)
-    marker.material = selected ? riderMaterial('selected', new Color3(1, 1, 1)) : d.placement!.height === 'truss' ? riderMaterial('ok', new Color3(0.3, 0.9, 0.5)) : riderMaterial('assumed', new Color3(1, 0.7, 0.2))
+    marker.material = selected
+      ? riderMaterial('selected', new Color3(1, 1, 1))
+      : d.placement!.height === 'truss'
+        ? riderMaterial('ok', new Color3(0.3, 0.9, 0.5))
+        : riderMaterial('assumed', new Color3(1, 0.7, 0.2))
     marker.scaling.setAll(selected ? 1.5 : 1)
     marker.isPickable = riderStore.step === 'review'
   }
@@ -904,7 +914,11 @@ function updateRiderPreview() {
   }
   syncMarkerGizmo()
 }
-watch(() => [riderStore.open, riderStore.step, riderStore.result, riderStore.worldPoints, riderStore.excluded, riderStore.adjust, riderStore.selectedKeys], updateRiderPreview, { deep: true })
+watch(
+  () => [riderStore.open, riderStore.step, riderStore.result, riderStore.worldPoints, riderStore.excluded, riderStore.adjust, riderStore.selectedKeys],
+  updateRiderPreview,
+  { deep: true },
+)
 
 // --- crowd zone rectangles: the one being drawn, and the outline of the selected zone -----------------
 
@@ -912,7 +926,16 @@ let zonePreview: LinesMesh | undefined
 let zoneOutline: LinesMesh | undefined
 
 /** A rectangle lying on a plane, as a line loop (the same mesh is updated in place when there is one). */
-function rectangle(existing: LinesMesh | undefined, name: string, x0: number, z0: number, x1: number, z1: number, y: number, color: Color3): LinesMesh | undefined {
+function rectangle(
+  existing: LinesMesh | undefined,
+  name: string,
+  x0: number,
+  z0: number,
+  x1: number,
+  z1: number,
+  y: number,
+  color: Color3,
+): LinesMesh | undefined {
   if (!scene) return existing
   const points = [new Vector3(x0, y, z0), new Vector3(x1, y, z0), new Vector3(x1, y, z1), new Vector3(x0, y, z1), new Vector3(x0, y, z0)]
   if (existing) return MeshBuilder.CreateLines(name, { points, instance: existing }) as LinesMesh
@@ -1219,9 +1242,7 @@ async function screenshot(scale: number) {
 // --- group selection: one gizmo for several lights ----------------------------
 
 function selectedRoots() {
-  return rig.selectedIds
-    .map((id) => ({ id, root: fixtureRig?.rootOf(id) }))
-    .filter((x): x is { id: string; root: TransformNode } => !!x.root)
+  return rig.selectedIds.map((id) => ({ id, root: fixtureRig?.rootOf(id) })).filter((x): x is { id: string; root: TransformNode } => !!x.root)
 }
 
 /** Attaches the gizmo to the selected light, or to the pivot at the middle of several (turned back to neutral). */
@@ -1284,7 +1305,10 @@ function endGroupDrag(rotated: boolean) {
   attachGizmo() // the pivot moves to the lights' new centre
 }
 
-watch(() => props.modelUrl, (url) => showModel(url))
+watch(
+  () => props.modelUrl,
+  (url) => showModel(url),
+)
 watch(() => venues.current?.hiddenTags, applyTags, { deep: true })
 watch(
   [() => rig.fixtures, () => settings.haze],
@@ -1294,14 +1318,27 @@ watch(
   },
   { deep: true, flush: 'post' },
 )
-watch(() => rig.gizmoMode, (mode) => applyGizmoMode(mode))
+watch(
+  () => rig.gizmoMode,
+  (mode) => applyGizmoMode(mode),
+)
 // After an undo or redo the lights may have moved while the selection stayed the same: put the gizmo back on them.
-watch(() => rig.historyVersion, () => attachGizmo(), { flush: 'post' })
+watch(
+  () => rig.historyVersion,
+  () => attachGizmo(),
+  { flush: 'post' },
+)
 // Fixtures placed from the catalog look different once the catalog has arrived.
 watch(profilesVersion, () => fixtureRig?.sync(rig.fixtures, settings.haze))
 watch(() => settings.softBeams, applySoftBeams)
-watch(() => settings.hazeWisps, (amount) => fixtureRig?.setHazeWisps(amount))
-watch(() => settings.previewStrobe, (on) => fixtureRig?.setStrobePreview(on))
+watch(
+  () => settings.hazeWisps,
+  (amount) => fixtureRig?.setHazeWisps(amount),
+)
+watch(
+  () => settings.previewStrobe,
+  (on) => fixtureRig?.setStrobePreview(on),
+)
 watch(
   () => settings.animate,
   (on) => {
@@ -1324,9 +1361,18 @@ watch(
   },
 )
 watch(() => [settings.toneMapping, settings.exposure, settings.bloom, settings.haze, settings.ambient], applyLook)
-watch(() => settings.renderRest, (fraction) => quality?.setRestFraction(fraction))
-watch(() => settings.adaptive, (enabled) => quality?.setEnabled(enabled))
-watch(() => settings.renderMoving, (fraction) => quality?.setMovingFloor(fraction))
+watch(
+  () => settings.renderRest,
+  (fraction) => quality?.setRestFraction(fraction),
+)
+watch(
+  () => settings.adaptive,
+  (enabled) => quality?.setEnabled(enabled),
+)
+watch(
+  () => settings.renderMoving,
+  (fraction) => quality?.setMovingFloor(fraction),
+)
 watch(
   () => rig.selectedIds.join(','),
   () => {
@@ -1357,7 +1403,10 @@ watch(
     if (!first) zonePreview?.setEnabled(false)
   },
 )
-watch(() => rig.aim.armed || crowdStore.picking || riderStore.pickingWorld !== null, (on) => (on ? updateAimCursor() : hideAimCursor()))
+watch(
+  () => rig.aim.armed || crowdStore.picking || riderStore.pickingWorld !== null,
+  (on) => (on ? updateAimCursor() : hideAimCursor()),
+)
 watch(() => [rig.aim.anchor, rig.aimActive], updateAimMarker)
 watch(
   () => settings.ambient,

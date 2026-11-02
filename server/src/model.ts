@@ -41,14 +41,13 @@ export function checkGltf(gltf: unknown, binChunk: boolean): void {
   if (!version) throw new ModelError('not a glTF model (no asset version)')
   if (!version.startsWith('2.')) throw new ModelError(`glTF ${version} is not supported, only glTF 2.0`)
   if (!Array.isArray(doc.meshes) || doc.meshes.length === 0) throw new ModelError('the model has no meshes')
-  const external = [...(doc.buffers ?? []), ...(doc.images ?? [])]
-    .map((item) => item?.uri)
-    .filter((uri) => !isEmbedded(uri))
+  const external = [...(doc.buffers ?? []), ...(doc.images ?? [])].map((item) => item?.uri).filter((uri) => !isEmbedded(uri))
   if (external.length) {
-    const names = external.slice(0, 3).map((uri) => String(uri)).join(', ')
-    throw new ModelError(
-      `the model refers to separate files (${names}${external.length > 3 ? ', …' : ''}). Export it as a single .glb (glTF Binary) instead`,
-    )
+    const names = external
+      .slice(0, 3)
+      .map((uri) => String(uri))
+      .join(', ')
+    throw new ModelError(`the model refers to separate files (${names}${external.length > 3 ? ', …' : ''}). Export it as a single .glb (glTF Binary) instead`)
   }
   // a buffer without uri is the GLB's binary chunk; a plain .gltf has none
   if ((doc.buffers ?? []).some((b, i) => b?.uri === undefined && !(binChunk && i === 0))) {

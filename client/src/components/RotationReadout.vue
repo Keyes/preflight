@@ -18,12 +18,7 @@ const text = computed(() => {
 </script>
 
 <template>
-  <div
-    v-if="readout"
-    class="readout"
-    :style="{ left: `${readout.x + 18}px`, top: `${readout.y + 18}px` }"
-    aria-live="off"
-  >
+  <div v-if="readout" class="readout" :style="{ left: `${readout.x + 18}px`, top: `${readout.y + 18}px` }" aria-live="off">
     <span class="axis" :style="{ color: AXIS_COLORS[readout.axis] }">{{ readout.axis.toUpperCase() }}</span>
     <span class="value">{{ text }}</span>
     <span class="hint">{{ readout.snapping ? 'snapping 5°' : 'Shift to snap 5°' }}</span>

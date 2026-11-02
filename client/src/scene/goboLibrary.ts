@@ -155,7 +155,11 @@ export const GOBOS: readonly Gobo[] = [
     name: 'Triangles',
     draw(ctx, size) {
       light(ctx)
-      for (const [x, y, flip] of [[0.5, 0.3, 1], [0.3, 0.68, -1], [0.7, 0.68, -1]] as const) {
+      for (const [x, y, flip] of [
+        [0.5, 0.3, 1],
+        [0.3, 0.68, -1],
+        [0.7, 0.68, -1],
+      ] as const) {
         polygon(ctx, x * size, y * size, size * 0.17, 3, flip > 0 ? -Math.PI / 2 : Math.PI / 2)
         ctx.fill()
       }
@@ -166,7 +170,15 @@ export const GOBOS: readonly Gobo[] = [
     draw(ctx, size) {
       light(ctx)
       ctx.lineWidth = size * 0.03
-      for (const [x, y] of [[0.5, 0.5], [0.5, 0.2], [0.5, 0.8], [0.26, 0.35], [0.74, 0.35], [0.26, 0.65], [0.74, 0.65]] as const) {
+      for (const [x, y] of [
+        [0.5, 0.5],
+        [0.5, 0.2],
+        [0.5, 0.8],
+        [0.26, 0.35],
+        [0.74, 0.35],
+        [0.26, 0.65],
+        [0.74, 0.65],
+      ] as const) {
         polygon(ctx, x * size, y * size, size * 0.13, 6, 0)
         ctx.stroke()
       }
@@ -178,7 +190,13 @@ export const GOBOS: readonly Gobo[] = [
       light(ctx)
       const gap = size * 0.06
       const half = size / 2 - gap * 1.5
-      for (const [x, y] of [[0, 0], [1, 0], [0, 1], [1, 1]] as const) ctx.fillRect(gap + x * (half + gap), gap + y * (half + gap), half, half)
+      for (const [x, y] of [
+        [0, 0],
+        [1, 0],
+        [0, 1],
+        [1, 1],
+      ] as const)
+        ctx.fillRect(gap + x * (half + gap), gap + y * (half + gap), half, half)
     },
   },
   {
@@ -301,7 +319,18 @@ export function goboTexture(scene: Scene): RawTexture2DArray {
     const pixels = ctxPixels(drawPattern(gobo))
     for (let i = 0; i < SIZE * SIZE; i++) data[layer * SIZE * SIZE + i] = pixels[i * 4]
   })
-  const texture = new RawTexture2DArray(data, SIZE, SIZE, GOBOS.length, Constants.TEXTUREFORMAT_R, scene, true, false, Texture.TRILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE)
+  const texture = new RawTexture2DArray(
+    data,
+    SIZE,
+    SIZE,
+    GOBOS.length,
+    Constants.TEXTUREFORMAT_R,
+    scene,
+    true,
+    false,
+    Texture.TRILINEAR_SAMPLINGMODE,
+    Constants.TEXTURETYPE_UNSIGNED_BYTE,
+  )
   texture.wrapU = Texture.CLAMP_ADDRESSMODE
   texture.wrapV = Texture.CLAMP_ADDRESSMODE
   textures.set(scene, texture)
@@ -368,7 +397,9 @@ function blurredPattern(pattern: number, level: number): Float32Array {
   if (!blurred) {
     blurred = grayPattern(pattern)
     const radius = BLUR_RADII[level]
-    if (radius > 0) for (let pass = 0; pass < 3; pass++) blurred = boxBlur(boxBlur(blurred, Math.max(1, Math.round(radius / 1.7)), false), Math.max(1, Math.round(radius / 1.7)), true)
+    if (radius > 0)
+      for (let pass = 0; pass < 3; pass++)
+        blurred = boxBlur(boxBlur(blurred, Math.max(1, Math.round(radius / 1.7)), false), Math.max(1, Math.round(radius / 1.7)), true)
     blurredPatterns.set(key, blurred)
   }
   return blurred

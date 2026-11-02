@@ -207,7 +207,10 @@ export class FixtureRig {
   onShadowedChange: ((ids: string[]) => void) | null = null
   private shadowedIds: string[] = []
 
-  constructor(private scene: Scene, useClustering = true) {
+  constructor(
+    private scene: Scene,
+    useClustering = true,
+  ) {
     const container = useClustering ? new ClusteredLightContainer('fixture-lights', [], scene) : null
     if (container && !container.isSupported) {
       container.dispose()
@@ -288,7 +291,7 @@ export class FixtureRig {
   private applyEdgeSoftness(node: FixtureNode) {
     const tanHalf = Math.tan(node.coneHalfAngle)
     const beamRadius = node.lensRadius + tanHalf * node.aimDistance
-    const blur = FOCUS_BLUR * node.lensRadius * Math.abs(node.aimDistance - node.focusDistance) / node.focusDistance
+    const blur = (FOCUS_BLUR * node.lensRadius * Math.abs(node.aimDistance - node.focusDistance)) / node.focusDistance
     const edge = node.edgeFixed >= 0 ? Math.min(MAX_EDGE, node.edgeFixed) : Math.min(MAX_EDGE, Math.max(MIN_EDGE, blur / beamRadius + MIN_EDGE))
     node.edge = edge
     if (node.projected && node.projection) {
@@ -476,7 +479,14 @@ export class FixtureRig {
     cone.material = beamMaterial
 
     const node: FixtureNode = {
-      root, pan, tilt, light, lens, lensMaterial, cone, beamMaterial,
+      root,
+      pan,
+      tilt,
+      light,
+      lens,
+      lensMaterial,
+      cone,
+      beamMaterial,
       body: built.body,
       modelKey: modelKey(model),
       lensRadius: layout.lensRadius,
@@ -620,7 +630,17 @@ export class FixtureRig {
     const get = (key: string, fallback: number) => v[key] ?? profile.defaults[key] ?? fallback
 
     this.ensureModel(node, profile.model)
-    const poseKey = JSON.stringify([fixture.position, fixture.rotation, fixture.yaw, fixture.mount, v, profile.id, profile.beamAngle, profile.panRange, profile.tiltRange])
+    const poseKey = JSON.stringify([
+      fixture.position,
+      fixture.rotation,
+      fixture.yaw,
+      fixture.mount,
+      v,
+      profile.id,
+      profile.beamAngle,
+      profile.panRange,
+      profile.tiltRange,
+    ])
     if (poseKey !== node.poseKey) {
       node.poseKey = poseKey
       node.shadowDirty = true // anything about a fixture may change what its shadow looks like
@@ -632,8 +652,7 @@ export class FixtureRig {
       node.root.rotationQuaternion = Quaternion.FromArray(fixture.rotation)
     } else {
       const yaw = Quaternion.RotationAxis(Vector3.Up(), fixture.yaw)
-      node.root.rotationQuaternion =
-        fixture.mount === 'hanging' ? yaw.multiply(Quaternion.RotationAxis(Vector3.Right(), Math.PI)) : yaw
+      node.root.rotationQuaternion = fixture.mount === 'hanging' ? yaw.multiply(Quaternion.RotationAxis(Vector3.Right(), Math.PI)) : yaw
     }
 
     node.pan.rotation.y = rad(travelDegrees(get('pan', 0.5), profile.panRange))
@@ -848,7 +867,12 @@ export class FixtureRig {
     node.beamMaterial.setArray4('crowdRect', rect)
     node.beamMaterial.setArray4('crowdInfo', info)
     const a = this.absorbers
-    node.beamMaterial.setArray4('crowdBounds', a.length ? [Math.min(...a.map((z) => z.minX)), Math.min(...a.map((z) => z.minZ)), Math.max(...a.map((z) => z.maxX)), Math.max(...a.map((z) => z.maxZ))] : [0, 0, 0, 0])
+    node.beamMaterial.setArray4(
+      'crowdBounds',
+      a.length
+        ? [Math.min(...a.map((z) => z.minX)), Math.min(...a.map((z) => z.minZ)), Math.max(...a.map((z) => z.maxX)), Math.max(...a.map((z) => z.maxZ))]
+        : [0, 0, 0, 0],
+    )
     node.beamMaterial.setArray2('crowdLevels', a.length ? [Math.min(...a.map((z) => z.floor)), Math.max(...a.map((z) => z.top))] : [0, 0])
     node.beamMaterial.setInt('crowdCount', this.absorbers.length)
   }

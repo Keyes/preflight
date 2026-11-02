@@ -18,7 +18,9 @@ export async function createDemoVenue(): Promise<Venue> {
   const venue = await createVenue(preset.name)
   try {
     await copyFile(model, glbPath(venue.id))
-    const hash = createHash('sha256').update(await readFile(model)).digest('hex')
+    const hash = createHash('sha256')
+      .update(await readFile(model))
+      .digest('hex')
     const { name: _, ...rest } = preset
     return (await updateVenue(venue.id, { ...rest, status: 'ready', modelFormat: 'glb', modelHash: hash }))!
   } catch (err) {

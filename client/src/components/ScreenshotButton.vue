@@ -20,7 +20,11 @@ function say(text: string, error = false) {
 }
 
 const stamp = () => new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-')
-const slug = (text: string) => text.trim().replace(/[^\w\-]+/g, '_').replace(/^_+|_+$/g, '') || 'preflight'
+const slug = (text: string) =>
+  text
+    .trim()
+    .replace(/[^\w\-]+/g, '_')
+    .replace(/^_+|_+$/g, '') || 'preflight'
 
 async function shoot() {
   if (busy.value || !bridge.api) return

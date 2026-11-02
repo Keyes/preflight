@@ -86,18 +86,16 @@ export function planTransfer(
   const usedZoneNames = new Set((destination.zones ?? []).map((z) => z.name))
   const zones = (source.crowd?.zones ?? [])
     .filter((z) => zoneIds.has(z.id))
-    .map(
-      (z): CrowdZone => ({
-        ...z,
-        id: crypto.randomUUID(),
-        name: uniqueName(z.name, usedZoneNames),
-        x0: z.x0 + offset[0],
-        x1: z.x1 + offset[0],
-        y: z.y + offset[1],
-        z0: z.z0 + offset[2],
-        z1: z.z1 + offset[2],
-        facing: z.facing ? [z.facing[0] + offset[0], z.facing[1] + offset[2]] : null,
-      }),
-    )
+    .map((z): CrowdZone => ({
+      ...z,
+      id: crypto.randomUUID(),
+      name: uniqueName(z.name, usedZoneNames),
+      x0: z.x0 + offset[0],
+      x1: z.x1 + offset[0],
+      y: z.y + offset[1],
+      z0: z.z0 + offset[2],
+      z1: z.z1 + offset[2],
+      facing: z.facing ? [z.facing[0] + offset[0], z.facing[1] + offset[2]] : null,
+    }))
   return { fixtures, groups, zones }
 }

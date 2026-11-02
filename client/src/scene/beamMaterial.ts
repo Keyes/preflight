@@ -26,7 +26,7 @@ function hazeNoiseTexture(scene: Scene): RawTexture3D {
   }
   const lattice = new Float32Array(cells * cells * cells)
   for (let i = 0; i < lattice.length; i++) lattice[i] = random()
-  const at = (x: number, y: number, z: number) => lattice[(((z % cells) * cells + (y % cells)) * cells) + (x % cells)]
+  const at = (x: number, y: number, z: number) => lattice[((z % cells) * cells + (y % cells)) * cells + (x % cells)]
   const smooth = (f: number) => f * f * (3 - 2 * f)
   const data = new Uint8Array(size * size * size)
   let o = 0
@@ -53,7 +53,18 @@ function hazeNoiseTexture(scene: Scene): RawTexture3D {
       }
     }
   }
-  const texture = new RawTexture3D(data, size, size, size, Constants.TEXTUREFORMAT_R, scene, false, false, Texture.BILINEAR_SAMPLINGMODE, Constants.TEXTURETYPE_UNSIGNED_BYTE)
+  const texture = new RawTexture3D(
+    data,
+    size,
+    size,
+    size,
+    Constants.TEXTUREFORMAT_R,
+    scene,
+    false,
+    false,
+    Texture.BILINEAR_SAMPLINGMODE,
+    Constants.TEXTURETYPE_UNSIGNED_BYTE,
+  )
   texture.wrapU = Texture.WRAP_ADDRESSMODE
   texture.wrapV = Texture.WRAP_ADDRESSMODE
   texture.wrapR = Texture.WRAP_ADDRESSMODE
@@ -466,9 +477,40 @@ export function createBeamMaterial(scene: Scene, name: string): ShaderMaterial {
     {
       attributes: ['position'],
       uniforms: [
-        'world', 'view', 'worldViewProjection', 'cameraPosition', 'beamColor', 'strength', 'beamLength',
-        'lensRadius', 'lensHalfLength', 'hazeMotion', 'hazeTime', 'tanHalf', 'focusDistance', 'focusBlur', 'edgeFixed', 'screenSize', 'softDistance',
-        'lightView', 'lightTanHalf', 'shadowEnabled', 'shadowBias', 'venueMin', 'venueMax', 'venueClip', 'crowdRect', 'crowdInfo', 'crowdBounds', 'crowdLevels', 'crowdCount', 'goboOn', 'goboLayer', 'goboAngle', 'goboSpin', 'faceTest',
+        'world',
+        'view',
+        'worldViewProjection',
+        'cameraPosition',
+        'beamColor',
+        'strength',
+        'beamLength',
+        'lensRadius',
+        'lensHalfLength',
+        'hazeMotion',
+        'hazeTime',
+        'tanHalf',
+        'focusDistance',
+        'focusBlur',
+        'edgeFixed',
+        'screenSize',
+        'softDistance',
+        'lightView',
+        'lightTanHalf',
+        'shadowEnabled',
+        'shadowBias',
+        'venueMin',
+        'venueMax',
+        'venueClip',
+        'crowdRect',
+        'crowdInfo',
+        'crowdBounds',
+        'crowdLevels',
+        'crowdCount',
+        'goboOn',
+        'goboLayer',
+        'goboAngle',
+        'goboSpin',
+        'faceTest',
       ],
       samplers: ['depthSampler', 'shadowSampler', 'hazeNoise', 'goboSampler'],
     },

@@ -40,13 +40,17 @@ export const useLayout = defineStore('layout', () => {
   const toast = shallowRef<Toast | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
-  watch([collapsed, dockOpen, tab], () => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({ collapsed: [...collapsed.value], dockOpen: dockOpen.value, tab: tab.value }))
-    } catch {
-      /* storage unavailable: the layout just won't persist */
-    }
-  }, { deep: true })
+  watch(
+    [collapsed, dockOpen, tab],
+    () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ collapsed: [...collapsed.value], dockOpen: dockOpen.value, tab: tab.value }))
+      } catch {
+        /* storage unavailable: the layout just won't persist */
+      }
+    },
+    { deep: true },
+  )
 
   function toggleSection(id: string) {
     if (collapsed.value.has(id)) collapsed.value.delete(id)

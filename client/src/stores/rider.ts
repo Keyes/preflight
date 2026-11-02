@@ -236,7 +236,12 @@ export const useRider = defineStore('rider', () => {
     }
     const mine = ++requestId
     try {
-      const next = await api.riderDrafts(venue.id, { similarity: s, overrides: overrides.value, ceilingHeight: ceilingHeight.value, standHeight: standHeight.value })
+      const next = await api.riderDrafts(venue.id, {
+        similarity: s,
+        overrides: overrides.value,
+        ceilingHeight: ceilingHeight.value,
+        standHeight: standHeight.value,
+      })
       if (mine === requestId) {
         result.value = next
         error.value = null
@@ -247,10 +252,14 @@ export const useRider = defineStore('rider', () => {
   }
 
   let timer: ReturnType<typeof setTimeout> | undefined
-  watch([similarity, overrides, ceilingHeight, standHeight], () => {
-    clearTimeout(timer)
-    timer = setTimeout(refreshDrafts, 250)
-  }, { deep: true })
+  watch(
+    [similarity, overrides, ceilingHeight, standHeight],
+    () => {
+      clearTimeout(timer)
+      timer = setTimeout(refreshDrafts, 250)
+    },
+    { deep: true },
+  )
 
   function setOverride(fixId: string, profileId: string) {
     const next = { ...overrides.value }
@@ -410,8 +419,56 @@ export const useRider = defineStore('rider', () => {
   })
 
   return {
-    open, step, rider, busy, error, provider, apiKey, planImage, planPoints, worldPoints, pickingWorld, ceilingAt, similarity, calibrating, viewTurns, hideClutter, adjust, selectedKeys, movedCount, placed, positionOf, select, toggleSelected, selectGroup, selectAll, nudge, resetAdjust,
-    result, overrides, excluded, ceilingHeight, standHeight, measure, onExisting, importable, alreadyThere, flags,
-    show, close, loadPlan, uploadPdf, uploadJson, readPlan, removeRider, setPlanPoint, deliverWorld, refreshDrafts, setOverride, toggleIncluded, importNow, remember,
+    open,
+    step,
+    rider,
+    busy,
+    error,
+    provider,
+    apiKey,
+    planImage,
+    planPoints,
+    worldPoints,
+    pickingWorld,
+    ceilingAt,
+    similarity,
+    calibrating,
+    viewTurns,
+    hideClutter,
+    adjust,
+    selectedKeys,
+    movedCount,
+    placed,
+    positionOf,
+    select,
+    toggleSelected,
+    selectGroup,
+    selectAll,
+    nudge,
+    resetAdjust,
+    result,
+    overrides,
+    excluded,
+    ceilingHeight,
+    standHeight,
+    measure,
+    onExisting,
+    importable,
+    alreadyThere,
+    flags,
+    show,
+    close,
+    loadPlan,
+    uploadPdf,
+    uploadJson,
+    readPlan,
+    removeRider,
+    setPlanPoint,
+    deliverWorld,
+    refreshDrafts,
+    setOverride,
+    toggleIncluded,
+    importNow,
+    remember,
   }
 })

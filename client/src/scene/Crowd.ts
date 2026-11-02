@@ -152,7 +152,10 @@ export class Crowd {
   private readonly s = new Vector3()
   private readonly p = new Vector3()
 
-  constructor(private scene: Scene, maxLights: number) {
+  constructor(
+    private scene: Scene,
+    maxLights: number,
+  ) {
     const material = new PBRMaterial('crowd-material', scene)
     material.albedoColor.set(0.045, 0.045, 0.055)
     material.roughness = 0.9

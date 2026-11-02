@@ -45,11 +45,24 @@ const emptyState = computed(() => {
   if (!venue)
     return store.venues.length
       ? { title: 'No venue open', text: 'Open one of your venues to see it here.', action: 'Open a venue…' }
-      : { title: 'Start with a venue', text: 'A venue is the room you light: upload its 3D model (glTF .glb, or SketchUp .skp) and hang lights in it. Or try the demo club first.', action: 'Create a venue…', demo: true }
+      : {
+          title: 'Start with a venue',
+          text: 'A venue is the room you light: upload its 3D model (glTF .glb, or SketchUp .skp) and hang lights in it. Or try the demo club first.',
+          action: 'Create a venue…',
+          demo: true,
+        }
   if (venue.status === 'error')
-    return { title: 'The model could not be converted', text: `Something in the SketchUp file of “${venue.name}” stopped the conversion. Try replacing its model, or saving it again from SketchUp.`, action: 'Open Venues…' }
+    return {
+      title: 'The model could not be converted',
+      text: `Something in the SketchUp file of “${venue.name}” stopped the conversion. Try replacing its model, or saving it again from SketchUp.`,
+      action: 'Open Venues…',
+    }
   if (venue.status !== 'ready')
-    return { title: 'This venue has no model yet', text: `Upload a model (.glb, .gltf or .skp) for “${venue.name}” in the Venues window to see it here.`, action: 'Upload a model…' }
+    return {
+      title: 'This venue has no model yet',
+      text: `Upload a model (.glb, .gltf or .skp) for “${venue.name}” in the Venues window to see it here.`,
+      action: 'Upload a model…',
+    }
   return null
 })
 
@@ -99,12 +112,27 @@ onMounted(async () => {
       <div v-else-if="loadError" class="overlay error">Could not load venue: {{ loadError }}</div>
       <!-- Nothing to show yet: say why, and what to do next. -->
       <div v-else-if="emptyState" class="empty-state">
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 21V9l9-6 9 6v12" /><path d="M9 21v-6h6v6" /></svg>
+        <svg
+          viewBox="0 0 24 24"
+          width="28"
+          height="28"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.6"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 21V9l9-6 9 6v12" />
+          <path d="M9 21v-6h6v6" />
+        </svg>
         <h2>{{ emptyState.title }}</h2>
         <p>{{ emptyState.text }}</p>
         <div class="buttons">
           <button @click="store.windowOpen = true">{{ emptyState.action }}</button>
-          <button v-if="'demo' in emptyState" class="secondary" :disabled="addingDemo" @click="addDemo">{{ addingDemo ? 'Opening…' : 'Open the demo club' }}</button>
+          <button v-if="'demo' in emptyState" class="secondary" :disabled="addingDemo" @click="addDemo">
+            {{ addingDemo ? 'Opening…' : 'Open the demo club' }}
+          </button>
         </div>
         <p v-if="demoError" class="error">{{ demoError }}</p>
       </div>
@@ -118,7 +146,17 @@ onMounted(async () => {
         :aria-expanded="layout.dockOpen"
         @click="layout.dockOpen = !layout.dockOpen"
       >
-        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <svg
+          viewBox="0 0 24 24"
+          width="14"
+          height="14"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
           <path :d="layout.dockOpen ? 'm9 6 6 6-6 6' : 'm15 6-6 6 6 6'" />
         </svg>
         <span v-if="!layout.dockOpen && rig.selectedIds.length" class="badge">{{ rig.selectedIds.length }}</span>
@@ -129,14 +167,22 @@ onMounted(async () => {
           <p class="lead">No light selected</p>
           <p>Click a light in the view or the list to edit it, or “+ Place light” to add one.</p>
           <dl class="keys">
-            <dt>W A S D</dt><dd>Move</dd>
-            <dt>Q / E</dt><dd>Down / up</dd>
-            <dt>Shift</dt><dd>Move faster</dd>
-            <dt>Drag</dt><dd>Look around</dd>
-            <dt>1 – 9</dt><dd>Saved views</dd>
-            <dt>G / R / T</dt><dd>Move, rotate, aim a light</dd>
-            <dt>C</dt><dd>Show or hide the crowd</dd>
-            <dt>P</dt><dd>Pause animations</dd>
+            <dt>W A S D</dt>
+            <dd>Move</dd>
+            <dt>Q / E</dt>
+            <dd>Down / up</dd>
+            <dt>Shift</dt>
+            <dd>Move faster</dd>
+            <dt>Drag</dt>
+            <dd>Look around</dd>
+            <dt>1 – 9</dt>
+            <dd>Saved views</dd>
+            <dt>G / R / T</dt>
+            <dd>Move, rotate, aim a light</dd>
+            <dt>C</dt>
+            <dd>Show or hide the crowd</dd>
+            <dt>P</dt>
+            <dd>Pause animations</dd>
           </dl>
           <p class="more">All shortcuts: press <kbd>?</kbd></p>
         </div>

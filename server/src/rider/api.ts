@@ -42,17 +42,26 @@ const isPoint = (p: unknown): p is [number, number] => Array.isArray(p) && p.len
 /** A rider file sent by the client (made by `read-rider`, or edited by hand): checked for shape and size, not for sense. */
 export function cleanRider(value: unknown): RiderFile {
   const v = value as Partial<RiderFile> | null
-  if (!v || v.version !== 1 || !v.patch || !Array.isArray(v.patch.rows) || v.patch.rows.length > 600) throw new HttpError(400, 'not a rider file (version 1 with a patch table)')
+  if (!v || v.version !== 1 || !v.patch || !Array.isArray(v.patch.rows) || v.patch.rows.length > 600)
+    throw new HttpError(400, 'not a rider file (version 1 with a patch table)')
   for (const row of v.patch.rows) {
     const r = row as Partial<RiderFile['patch']['rows'][number]>
-    if (typeof r?.fixId !== 'string' || typeof r.name !== 'string' || typeof r.mode !== 'string' || typeof r.truss !== 'string' || !Number.isInteger(r.universe) || !Number.isInteger(r.address)) {
+    if (
+      typeof r?.fixId !== 'string' ||
+      typeof r.name !== 'string' ||
+      typeof r.mode !== 'string' ||
+      typeof r.truss !== 'string' ||
+      !Number.isInteger(r.universe) ||
+      !Number.isInteger(r.address)
+    ) {
       throw new HttpError(400, 'a patch row is incomplete')
     }
   }
   if (v.lamps !== undefined) {
     if (!Array.isArray(v.lamps) || v.lamps.length > 1000) throw new HttpError(400, 'lamps must be an array of at most 1000')
     for (const lamp of v.lamps) {
-      if (typeof lamp?.lampId !== 'string' || typeof lamp.fixId !== 'string' || !isPoint(lamp.planPx)) throw new HttpError(400, 'a lamp needs lampId, fixId and planPx')
+      if (typeof lamp?.lampId !== 'string' || typeof lamp.fixId !== 'string' || !isPoint(lamp.planPx))
+        throw new HttpError(400, 'a lamp needs lampId, fixId and planPx')
     }
   }
   if (v.plan !== undefined && (typeof v.plan !== 'object' || v.plan === null || typeof v.plan.trusses !== 'object')) throw new HttpError(400, 'invalid plan')
@@ -102,9 +111,18 @@ async function planImage(id: string, rider: RiderFile) {
   const xs = lamps.map((l) => l.planPx[0])
   const ys = lamps.map((l) => l.planPx[1])
   const crop: [number, number, number, number] = lamps.length
-    ? [Math.max(0, Math.min(...xs) - margin), Math.max(0, Math.min(...ys) - margin), Math.min(image.width, Math.max(...xs) + margin), Math.min(image.height, Math.max(...ys) + margin)]
+    ? [
+        Math.max(0, Math.min(...xs) - margin),
+        Math.max(0, Math.min(...ys) - margin),
+        Math.min(image.width, Math.max(...xs) + margin),
+        Math.min(image.height, Math.max(...ys) + margin),
+      ]
     : [0, 0, image.width, image.height]
-  const shot = cropPng(image, { x0: crop[0] / image.width, y0: crop[1] / image.height, x1: crop[2] / image.width, y1: crop[3] / image.height }, { maxSide: 2200 })
+  const shot = cropPng(
+    image,
+    { x0: crop[0] / image.width, y0: crop[1] / image.height, x1: crop[2] / image.width, y1: crop[3] / image.height },
+    { maxSide: 2200 },
+  )
   const entry = { png: shot.png, crop, page: [image.width, image.height] as [number, number] }
   for (const k of planImages.keys()) if (k.startsWith(`${id}:`)) planImages.delete(k)
   planImages.set(key, entry)
@@ -146,7 +164,10 @@ export async function handleRider(req: IncomingMessage, res: ServerResponse, id:
     if (!providerNames().includes(name)) throw new HttpError(400, `unknown provider "${name}" (available: ${providerNames().join(', ')})`)
     let provider
     try {
-      provider = createProvider(name, { apiKey: typeof body.apiKey === 'string' && body.apiKey ? body.apiKey : undefined, model: typeof body.model === 'string' && body.model ? body.model : undefined })
+      provider = createProvider(name, {
+        apiKey: typeof body.apiKey === 'string' && body.apiKey ? body.apiKey : undefined,
+        model: typeof body.model === 'string' && body.model ? body.model : undefined,
+      })
     } catch (err) {
       throw new HttpError(400, (err as Error).message)
     }
@@ -180,7 +201,12 @@ export async function handleRider(req: IncomingMessage, res: ServerResponse, id:
   if (sub === 'drafts' && method === 'POST') {
     const body = await readJson(req)
     const s = body.similarity
-    const similarity: Similarity = { scale: num(s?.scale, 'scale', 1e-6, 1e3), theta: num(s?.theta, 'theta', -100, 100), tx: num(s?.tx, 'tx'), tz: num(s?.tz, 'tz') }
+    const similarity: Similarity = {
+      scale: num(s?.scale, 'scale', 1e-6, 1e3),
+      theta: num(s?.theta, 'theta', -100, 100),
+      tx: num(s?.tx, 'tx'),
+      tz: num(s?.tz, 'tz'),
+    }
     const overrides: Record<string, string> = {}
     for (const [k, v] of Object.entries(body.overrides ?? {})) if (typeof v === 'string' && v.length <= 80 && k.length <= 120) overrides[k] = v
     const result = buildDrafts(await readRider(id), await catalogFixtures(), {

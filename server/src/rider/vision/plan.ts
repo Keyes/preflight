@@ -35,7 +35,9 @@ Look at the picture and answer with one JSON object, nothing else:
   "legend": ["Spot", "LED Zoom PAR", "..."]                       // the symbol names of the legend, in order
 }`
 
-const LAMPS_PROMPT = (legend: string[]) => `This is part of a venue's lighting plan: a top-down floor plan with lights drawn as small symbols, each with its number printed beside it (like #201, or 301 without the hash). A thin magenta grid is drawn over the picture; its labels (0.1 ... 0.9) are fractions of this picture's width (along the top) and height (down the left side).
+const LAMPS_PROMPT = (
+  legend: string[],
+) => `This is part of a venue's lighting plan: a top-down floor plan with lights drawn as small symbols, each with its number printed beside it (like #201, or 301 without the hash). A thin magenta grid is drawn over the picture; its labels (0.1 ... 0.9) are fractions of this picture's width (along the top) and height (down the left side).
 
 The symbol kinds are, from the plan's legend: ${legend.length ? legend.join('; ') : 'unknown'}.
 
@@ -47,7 +49,10 @@ List EVERY light symbol you can see in this picture, including ones on a truss, 
 
 Answer with one JSON object, nothing else: { "lamps": [ { "label": "201", "symbol": "LED Zoom PAR", "x": 0.31, "y": 0.22, "facingDeg": null } ] }`
 
-const MISSING_PROMPT = (numbers: string[], legend: string[]) => `This is part of a venue's lighting plan: a top-down floor plan with lights drawn as small symbols, each with its number printed beside it. A thin magenta grid is drawn over the picture; its labels (0.1 ... 0.9) are fractions of this picture's width (along the top) and height (down the left side).${legend.length ? ` The legend's symbol kinds: ${legend.join('; ')}.` : ''}
+const MISSING_PROMPT = (
+  numbers: string[],
+  legend: string[],
+) => `This is part of a venue's lighting plan: a top-down floor plan with lights drawn as small symbols, each with its number printed beside it. A thin magenta grid is drawn over the picture; its labels (0.1 ... 0.9) are fractions of this picture's width (along the top) and height (down the left side).${legend.length ? ` The legend's symbol kinds: ${legend.join('; ')}.` : ''}
 
 An earlier look at this plan missed some lights. Look only for the lights numbered ${numbers.join(', ')} (digits as printed). A symbol may be tilted, partly under a wall or another symbol, or at the edge of the drawing. Report one only if you can actually see that number printed beside a light symbol in this picture; it is normal that most of these numbers are not here, and the answer is then an empty list. Do not guess.
 
@@ -80,7 +85,13 @@ export function parseLayout(raw: Record<string, unknown>, issues: string[]): Lay
   let stage: Layout['stage']
   const s = rec(raw.stage)
   if (isNum(s.width) && isNum(s.depth)) {
-    stage = { width: s.width, depth: s.depth, height: isNum(s.height) ? s.height : 0, ...(isPoint(s.frontLeft) ? { frontLeft: s.frontLeft } : {}), ...(isPoint(s.frontRight) ? { frontRight: s.frontRight } : {}) }
+    stage = {
+      width: s.width,
+      depth: s.depth,
+      height: isNum(s.height) ? s.height : 0,
+      ...(isPoint(s.frontLeft) ? { frontLeft: s.frontLeft } : {}),
+      ...(isPoint(s.frontRight) ? { frontRight: s.frontRight } : {}),
+    }
   }
 
   const trusses: Layout['trusses'] = []
@@ -92,9 +103,21 @@ export function parseLayout(raw: Record<string, unknown>, issues: string[]): Lay
   }
 
   const h = rec(raw.heights)
-  const heights = { ...(isNum(h.stage) ? { stage: h.stage } : {}), ...(isNum(h.hall) ? { hall: h.hall } : {}), ...(isNum(h.lowestLight) ? { lowestLight: h.lowestLight } : {}) }
+  const heights = {
+    ...(isNum(h.stage) ? { stage: h.stage } : {}),
+    ...(isNum(h.hall) ? { hall: h.hall } : {}),
+    ...(isNum(h.lowestLight) ? { lowestLight: h.lowestLight } : {}),
+  }
   const legend = (Array.isArray(raw.legend) ? raw.legend : []).filter((l): l is string => typeof l === 'string' && l.trim() !== '').map((l) => l.trim())
-  return { drawing, ...(typeof raw.scale === 'string' ? { scale: raw.scale } : {}), ...(typeof raw.date === 'string' ? { date: raw.date } : {}), ...(stage ? { stage } : {}), trusses, heights, legend }
+  return {
+    drawing,
+    ...(typeof raw.scale === 'string' ? { scale: raw.scale } : {}),
+    ...(typeof raw.date === 'string' ? { date: raw.date } : {}),
+    ...(stage ? { stage } : {}),
+    trusses,
+    heights,
+    legend,
+  }
 }
 
 /** "201", "#201" and " 201 " are the rider's #201; anything else (S01, "?") is kept as printed, with a hash it cannot have. */
@@ -233,7 +256,9 @@ export function reconcileLabels(rows: readonly RiderPatchRow[], lamps: RiderLamp
     const byAddress = free().filter((r) => r.address === Number(digits))
     const match = byEnding.length === 1 ? byEnding[0] : byAddress.length === 1 ? byAddress[0] : undefined
     if (!match) continue
-    notes.push(`${lamp.fixId} on the plan was read as ${match.fixId} ${match.name} (${byEnding.length === 1 ? `the number ends like it and ${match.fixId} is otherwise not on the plan` : `${digits} is its DMX address and ${match.fixId} is otherwise not on the plan`}); check it`)
+    notes.push(
+      `${lamp.fixId} on the plan was read as ${match.fixId} ${match.name} (${byEnding.length === 1 ? `the number ends like it and ${match.fixId} is otherwise not on the plan` : `${digits} is its DMX address and ${match.fixId} is otherwise not on the plan`}); check it`,
+    )
     lamp.printed = lamp.fixId
     lamp.fixId = match.fixId
     lamp.lampId = lamp.lampId.replace(lamp.printed, match.fixId)
@@ -249,7 +274,9 @@ export function crossCheck(rows: readonly RiderPatchRow[], lamps: readonly Rider
   const drawn = new Set(lamps.map((l) => l.fixId))
   for (const id of [...drawn].filter((i) => i !== '?' && !patched.has(i))) {
     const count = lamps.filter((l) => l.fixId === id).length
-    issues.push(`The plan shows ${id}${count > 1 ? ` (${count} times)` : ''} but the patch has no row for it, so it has no address or type (it will be imported unpatched)`)
+    issues.push(
+      `The plan shows ${id}${count > 1 ? ` (${count} times)` : ''} but the patch has no row for it, so it has no address or type (it will be imported unpatched)`,
+    )
   }
   const strays = lamps.filter((l) => l.fixId === '?').length
   if (strays) issues.push(`${strays} ${strays === 1 ? 'light on the plan has' : 'lights on the plan have'} no readable number`)
@@ -294,14 +321,24 @@ export async function readPlan(provider: VisionProvider, image: PageImage, page:
     const extra = await Promise.all(
       bands(layout.drawing).map(async ({ region, core }) => {
         const shot = cropPng(image, region, { grid: true })
-        const raw = await askJson(provider, shot.png, MISSING_PROMPT(absent.map((id) => id.replace('#', '')), layout.legend))
+        const raw = await askJson(
+          provider,
+          shot.png,
+          MISSING_PROMPT(
+            absent.map((id) => id.replace('#', '')),
+            layout.legend,
+          ),
+        )
         return parseLamps(raw, region, issues).filter((l) => l.fixId !== null && wanted.has(l.fixId) && l.at[1] >= core.y0 && l.at[1] < core.y1)
       }),
     )
     found = mergeLamps([...found, ...extra.flat()], image.width, image.height)
   }
   const projectors = found.filter((l) => /proj/i.test(l.symbol ?? ''))
-  if (projectors.length) issues.push(`${projectors.length} projector ${projectors.length === 1 ? 'symbol' : 'symbols'} on the plan skipped (video is for rent only and is not a light)`)
+  if (projectors.length)
+    issues.push(
+      `${projectors.length} projector ${projectors.length === 1 ? 'symbol' : 'symbols'} on the plan skipped (video is for rent only and is not a light)`,
+    )
   const lamps = numberLamps(
     found.filter((l) => !projectors.includes(l)),
     image.width,
@@ -339,7 +376,9 @@ export async function readPlan(provider: VisionProvider, image: PageImage, page:
             width: layout.stage.width,
             depth: layout.stage.depth,
             height: layout.stage.height,
-            ...(layout.stage.frontLeft && layout.stage.frontRight ? { planPx: [px(layout.stage.frontLeft), px(layout.stage.frontRight)] as [Point, Point] } : {}),
+            ...(layout.stage.frontLeft && layout.stage.frontRight
+              ? { planPx: [px(layout.stage.frontLeft), px(layout.stage.frontRight)] as [Point, Point] }
+              : {}),
           },
         }
       : {}),

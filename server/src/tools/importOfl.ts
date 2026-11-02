@@ -30,16 +30,43 @@ function degrees(v: unknown): number | undefined {
 }
 
 const COLOR_ATTRS: Record<string, string> = {
-  Red: 'red', Green: 'green', Blue: 'blue', White: 'white', Amber: 'amber', UV: 'uv', Cyan: 'cyan',
-  Magenta: 'magenta', Yellow: 'yellow', Lime: 'lime', Indigo: 'indigo',
+  Red: 'red',
+  Green: 'green',
+  Blue: 'blue',
+  White: 'white',
+  Amber: 'amber',
+  UV: 'uv',
+  Cyan: 'cyan',
+  Magenta: 'magenta',
+  Yellow: 'yellow',
+  Lime: 'lime',
+  Indigo: 'indigo',
 }
 
 const TYPE_ATTRS: Record<string, string> = {
-  Pan: 'pan', Tilt: 'tilt', PanContinuous: 'pan-rotation', TiltContinuous: 'tilt-rotation',
-  Intensity: 'dimmer', Zoom: 'zoom', Focus: 'focus', ShutterStrobe: 'strobe', StrobeSpeed: 'strobe',
-  Prism: 'prism', PrismRotation: 'prism', Iris: 'iris', IrisEffect: 'iris', Frost: 'frost', FrostEffect: 'frost',
-  ColorPreset: 'color-wheel', ColorTemperature: 'color-temperature', Effect: 'effect', EffectSpeed: 'effect',
-  PanTiltSpeed: 'speed', BladeInsertion: 'framing', BladeRotation: 'framing', BladeSystemRotation: 'framing',
+  Pan: 'pan',
+  Tilt: 'tilt',
+  PanContinuous: 'pan-rotation',
+  TiltContinuous: 'tilt-rotation',
+  Intensity: 'dimmer',
+  Zoom: 'zoom',
+  Focus: 'focus',
+  ShutterStrobe: 'strobe',
+  StrobeSpeed: 'strobe',
+  Prism: 'prism',
+  PrismRotation: 'prism',
+  Iris: 'iris',
+  IrisEffect: 'iris',
+  Frost: 'frost',
+  FrostEffect: 'frost',
+  ColorPreset: 'color-wheel',
+  ColorTemperature: 'color-temperature',
+  Effect: 'effect',
+  EffectSpeed: 'effect',
+  PanTiltSpeed: 'speed',
+  BladeInsertion: 'framing',
+  BladeRotation: 'framing',
+  BladeSystemRotation: 'framing',
 }
 
 /** What a channel does, in the vocabulary the viewer knows ('' when it does not map to anything we use). */
@@ -112,10 +139,12 @@ function buildFixture(manufacturerKey: string, manufacturerName: string, file: s
   const pixelKeys = (): string[] => {
     const keys: string[] = []
     if (Array.isArray(matrix.pixelKeys)) {
-      for (const plane of matrix.pixelKeys) for (const row of Array.isArray(plane) ? plane : []) for (const key of Array.isArray(row) ? row : []) if (typeof key === 'string') keys.push(key)
+      for (const plane of matrix.pixelKeys)
+        for (const row of Array.isArray(plane) ? plane : []) for (const key of Array.isArray(row) ? row : []) if (typeof key === 'string') keys.push(key)
     } else if (Array.isArray(matrix.pixelCount)) {
       const [nx = 1, ny = 1, nz = 1] = matrix.pixelCount.map((n: unknown) => num(n) ?? 1)
-      for (let z = 1; z <= nz; z++) for (let y = 1; y <= ny; y++) for (let x = 1; x <= nx; x++) keys.push(ny === 1 && nz === 1 ? String(x) : `(${x}, ${y}, ${z})`)
+      for (let z = 1; z <= nz; z++)
+        for (let y = 1; y <= ny; y++) for (let x = 1; x <= nx; x++) keys.push(ny === 1 && nz === 1 ? String(x) : `(${x}, ${y}, ${z})`)
     }
     return keys
   }
@@ -142,8 +171,8 @@ function buildFixture(manufacturerKey: string, manufacturerName: string, file: s
   const features = new Set<string>()
   for (const mode of Array.isArray(data.modes) ? data.modes : []) {
     if (!isObject(mode) || !Array.isArray(mode.channels)) continue
-    const channels: [string, string][] = mode.channels.flatMap((c): [string, string][] =>
-      typeof c === 'string' ? [[c, attributeOf(c)]] : isObject(c) ? expandInsert(c) : [['', '']], // null = unused
+    const channels: [string, string][] = mode.channels.flatMap(
+      (c): [string, string][] => (typeof c === 'string' ? [[c, attributeOf(c)]] : isObject(c) ? expandInsert(c) : [['', '']]), // null = unused
     )
     for (const [, attr] of channels) if (attr && !attr.endsWith('-fine') && !attr.endsWith('-ultra')) features.add(attr)
     modes.push({ name: str(mode.name) ?? 'Mode', ...(str(mode.shortName) ? { shortName: str(mode.shortName) } : {}), channels })

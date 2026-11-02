@@ -123,8 +123,28 @@ export const useCrowd = defineStore('crowd', () => {
   }
 
   return {
-    crowd, zones, counts, people, requested, selectedId, drawing, facingFor, message, picking,
-    setShown, setDensity, setMotion, setIntensity,
-    addZones, startDrawing, startFacing, cancelPicking, finishZone, setFacing, renameZone, toggleZone, removeZone,
+    crowd,
+    zones,
+    counts,
+    people,
+    requested,
+    selectedId,
+    drawing,
+    facingFor,
+    message,
+    picking,
+    setShown,
+    setDensity,
+    setMotion,
+    setIntensity,
+    addZones,
+    startDrawing,
+    startFacing,
+    cancelPicking,
+    finishZone,
+    setFacing,
+    renameZone,
+    toggleZone,
+    removeZone,
   }
 })

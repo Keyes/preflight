@@ -6,7 +6,16 @@ import { bands, crossCheck, mergeLamps, normalizeLabel, numberLamps, parseLamps,
 import { parseJsonAnswer, type VisionProvider } from './provider.js'
 import { cropPng, toWhole, type PageImage } from './render.js'
 
-const row = (fixId: string, truss: string, name = fixId): RiderPatchRow => ({ fixId, universe: 1, address: 1, name, modeRaw: 'Dim', mode: 'Dim', channels: 1, truss })
+const row = (fixId: string, truss: string, name = fixId): RiderPatchRow => ({
+  fixId,
+  universe: 1,
+  address: 1,
+  name,
+  modeRaw: 'Dim',
+  mode: 'Dim',
+  channels: 1,
+  truss,
+})
 
 test('parseJsonAnswer takes bare, fenced and chatty answers', () => {
   assert.deepEqual(parseJsonAnswer('{"a":1}'), { a: 1 })
@@ -42,9 +51,20 @@ test('toWhole maps a band-local point to the page', () => {
 
 test('parseLayout falls back to the whole page and reports unusable parts', () => {
   const issues: string[] = []
-  const layout = parseLayout({ drawing: { x0: 0.5, y0: 0.5, x1: 0.2, y1: 0.9 }, trusses: [{ name: 'lx1', a: [0.1, 0.2], b: [0.8, 0.2], area: 'stage' }, { name: 'LX2' }], heights: { stage: 4, hall: null }, legend: ['Spot', 3] }, issues)
+  const layout = parseLayout(
+    {
+      drawing: { x0: 0.5, y0: 0.5, x1: 0.2, y1: 0.9 },
+      trusses: [{ name: 'lx1', a: [0.1, 0.2], b: [0.8, 0.2], area: 'stage' }, { name: 'LX2' }],
+      heights: { stage: 4, hall: null },
+      legend: ['Spot', 3],
+    },
+    issues,
+  )
   assert.deepEqual(layout.drawing, { x0: 0, y0: 0, x1: 1, y1: 1 })
-  assert.deepEqual(layout.trusses.map((t) => t.name), ['LX1'])
+  assert.deepEqual(
+    layout.trusses.map((t) => t.name),
+    ['LX1'],
+  )
   assert.deepEqual(layout.heights, { stage: 4 })
   assert.deepEqual(layout.legend, ['Spot'])
   assert.equal(issues.length, 2)
@@ -53,7 +73,18 @@ test('parseLayout falls back to the whole page and reports unusable parts', () =
 test('the same light seen in two bands is one, two lights with one number are numbered', () => {
   const region = { x0: 0, y0: 0, x1: 1, y1: 1 }
   const issues: string[] = []
-  const a = parseLamps({ lamps: [{ label: '1', symbol: 'Conv. PAR', x: 0.3, y: 0.2 }, { label: '1', symbol: 'Conv. PAR', x: 0.6, y: 0.4 }, { label: '5', symbol: 'Fresnel', x: 0.1, y: 0.5, facingDeg: 450 }, { x: 2, y: 0 }] }, region, issues)
+  const a = parseLamps(
+    {
+      lamps: [
+        { label: '1', symbol: 'Conv. PAR', x: 0.3, y: 0.2 },
+        { label: '1', symbol: 'Conv. PAR', x: 0.6, y: 0.4 },
+        { label: '5', symbol: 'Fresnel', x: 0.1, y: 0.5, facingDeg: 450 },
+        { x: 2, y: 0 },
+      ],
+    },
+    region,
+    issues,
+  )
   const b = parseLamps({ lamps: [{ label: '1', symbol: 'Spot', x: 0.301, y: 0.201 }] }, region, issues)
   assert.equal(issues.length, 1)
   const merged = mergeLamps([...a, ...b], 2000, 3000)
@@ -65,7 +96,22 @@ test('the same light seen in two bands is one, two lights with one number are nu
 })
 
 test('trussOnPlan picks the nearest line in reach and none for a stand', () => {
-  const trusses = { LX1: { underside: 4, planPx: [[100, 100], [900, 100]] as [[number, number], [number, number]] }, LX2: { underside: 4, planPx: [[100, 300], [900, 300]] as [[number, number], [number, number]] } }
+  const trusses = {
+    LX1: {
+      underside: 4,
+      planPx: [
+        [100, 100],
+        [900, 100],
+      ] as [[number, number], [number, number]],
+    },
+    LX2: {
+      underside: 4,
+      planPx: [
+        [100, 300],
+        [900, 300],
+      ] as [[number, number], [number, number]],
+    },
+  }
   assert.equal(trussOnPlan([500, 130], trusses, 60), 'LX1')
   assert.equal(trussOnPlan([500, 270], trusses, 60), 'LX2')
   assert.equal(trussOnPlan([500, 200], trusses, 60), undefined)
@@ -79,7 +125,14 @@ test('crossCheck reports numbers on one side only and a truss that differs, and 
     { lampId: '#326', fixId: '#326', planPx: [0, 0] as [number, number] },
     { lampId: '#232', fixId: '#232', planPx: [0, 0] as [number, number] },
   ]
-  const issues = crossCheck(rows, lamps, new Map([['#201', 'LX1'], ['#326', 'LX4']]))
+  const issues = crossCheck(
+    rows,
+    lamps,
+    new Map([
+      ['#201', 'LX1'],
+      ['#326', 'LX4'],
+    ]),
+  )
   assert.equal(issues.length, 3)
   assert.ok(issues.some((i) => i.includes('#232') && i.includes('no row')))
   assert.ok(issues.some((i) => i.includes('#9') && i.includes('does not show it')))
@@ -95,15 +148,29 @@ test('cropPng returns a PNG of the region at the requested size', () => {
 })
 
 test('a light listed with and without its number is one light, and the numbered one wins', () => {
-  const lamps = mergeLamps([{ fixId: null, at: [0.5, 0.5] }, { fixId: '#26', at: [0.501, 0.5] }, { fixId: '#26', at: [0.6, 0.5] }], 2000, 3000)
-  assert.deepEqual(lamps.map((l) => l.fixId), ['#26', '#26'])
+  const lamps = mergeLamps(
+    [
+      { fixId: null, at: [0.5, 0.5] },
+      { fixId: '#26', at: [0.501, 0.5] },
+      { fixId: '#26', at: [0.6, 0.5] },
+    ],
+    2000,
+    3000,
+  )
+  assert.deepEqual(
+    lamps.map((l) => l.fixId),
+    ['#26', '#26'],
+  )
 })
 
 test('reconcileLabels reads S01 as #501 and a DMX address as its row, but only when it is unambiguous', () => {
   const rows = [row('#101', 'LX1'), row('#501', 'LX2', 'Robin LED 150'), { ...row('#326', 'LX3/4', 'Spiegelkugel'), address: 41 }]
   const lamps: RiderLamp[] = ['#101', 'S01', '#41'].map((fixId) => ({ lampId: fixId, fixId, planPx: [0, 0] }))
   const notes = reconcileLabels(rows, lamps)
-  assert.deepEqual(lamps.map((l) => l.fixId), ['#101', '#501', '#326'])
+  assert.deepEqual(
+    lamps.map((l) => l.fixId),
+    ['#101', '#501', '#326'],
+  )
   assert.equal(lamps[1].printed, 'S01')
   assert.equal(notes.length, 2)
   // "01" also ends #601, which the plan does not show either: no guess
@@ -114,7 +181,11 @@ test('reconcileLabels reads S01 as #501 and a DMX address as its row, but only w
 
 test('an answer that is not JSON is asked for again', async () => {
   let n = 0
-  const provider: VisionProvider = { name: 'fake', model: 'fake', ask: async () => (n++ === 0 ? 'oops, not json' : '{"drawing":{"x0":0,"y0":0,"x1":1,"y1":1}}') }
+  const provider: VisionProvider = {
+    name: 'fake',
+    model: 'fake',
+    ask: async () => (n++ === 0 ? 'oops, not json' : '{"drawing":{"x0":0,"y0":0,"x1":1,"y1":1}}'),
+  }
   const canvas = createCanvas(100, 100)
   const reading = await readPlan(provider, { canvas, width: 100, height: 100 }, 1, [])
   assert.ok(n >= 2)
@@ -122,7 +193,14 @@ test('an answer that is not JSON is asked for again', async () => {
 })
 
 test('readPlan keeps each light from the band it belongs to, skips projectors, and cross-checks against the patch', async () => {
-  const layout = JSON.stringify({ drawing: { x0: 0, y0: 0, x1: 1, y1: 1 }, scale: '1:100', stage: { width: 10, depth: 4.7, height: 0.6, frontLeft: [0.2, 0.5], frontRight: [0.8, 0.5] }, trusses: [{ name: 'LX1', a: [0.1, 0.1], b: [0.9, 0.1], area: 'stage' }], heights: { stage: 4, hall: 4.6, lowestLight: 3.5 }, legend: ['Zoom PAR'] })
+  const layout = JSON.stringify({
+    drawing: { x0: 0, y0: 0, x1: 1, y1: 1 },
+    scale: '1:100',
+    stage: { width: 10, depth: 4.7, height: 0.6, frontLeft: [0.2, 0.5], frontRight: [0.8, 0.5] },
+    trusses: [{ name: 'LX1', a: [0.1, 0.1], b: [0.9, 0.1], area: 'stage' }],
+    heights: { stage: 4, hall: 4.6, lowestLight: 3.5 },
+    legend: ['Zoom PAR'],
+  })
   // Each band answers in its own fractions: band 0 shows page y 0..0.417, band 1 0.25..0.75, band 2 0.583..1.
   const bandAnswers = [
     '```json\n{"lamps":[{"label":"201","symbol":"Zoom PAR","x":0.5,"y":0.24},{"label":"7","symbol":"Fresnel","x":0.3,"y":0.9}]}\n```', // the second is page y 0.375, band 1's core: dropped here
@@ -134,7 +212,10 @@ test('readPlan keeps each light from the band it belongs to, skips projectors, a
   const canvas = createCanvas(1000, 1000)
   const reading = await readPlan(provider, { canvas, width: 1000, height: 1000 }, 2, [row('#201', 'LX1', 'Zoom1')])
   assert.equal(reading.plan.trusses.LX1.underside, 4)
-  assert.deepEqual(reading.plan.stage?.planPx, [[200, 500], [800, 500]])
+  assert.deepEqual(reading.plan.stage?.planPx, [
+    [200, 500],
+    [800, 500],
+  ])
   assert.deepEqual(reading.lamps.map((l) => l.lampId).sort(), ['#201', '#7', '#999'])
   assert.equal(reading.lamps.find((l) => l.fixId === '#201')?.trussOnPlan, 'LX1')
   assert.ok(reading.issues.some((i) => i.includes('projector')))

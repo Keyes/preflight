@@ -9,8 +9,23 @@ before(async () => {
   catalog = await catalogFixtures()
 })
 
-const row = (fixId: string, name: string, truss: string, extra: Partial<RiderPatchRow> = {}): RiderPatchRow => ({ fixId, universe: 1, address: 1, name, modeRaw: 'Dim', mode: 'Dim', channels: 1, truss, ...extra })
-const lamp = (lampId: string, x: number, y: number, extra: Partial<RiderLamp> = {}): RiderLamp => ({ lampId, fixId: lampId.replace(/\.\d+$/, ''), planPx: [x, y], ...extra })
+const row = (fixId: string, name: string, truss: string, extra: Partial<RiderPatchRow> = {}): RiderPatchRow => ({
+  fixId,
+  universe: 1,
+  address: 1,
+  name,
+  modeRaw: 'Dim',
+  mode: 'Dim',
+  channels: 1,
+  truss,
+  ...extra,
+})
+const lamp = (lampId: string, x: number, y: number, extra: Partial<RiderLamp> = {}): RiderLamp => ({
+  lampId,
+  fixId: lampId.replace(/\.\d+$/, ''),
+  planPx: [x, y],
+  ...extra,
+})
 const similarity = { scale: 0.01, theta: 0, tx: 0, tz: 0 }
 
 const rider: RiderFile = {
@@ -32,7 +47,15 @@ const rider: RiderFile = {
     page: 2,
     image: { width: 3000, height: 3000 },
     trusses: { LX1: { underside: 4 }, LX3: { underside: 4.6 } },
-    stage: { width: 10, depth: 4.7, height: 0.6, planPx: [[500, 1000], [1500, 1000]] },
+    stage: {
+      width: 10,
+      depth: 4.7,
+      height: 0.6,
+      planPx: [
+        [500, 1000],
+        [1500, 1000],
+      ],
+    },
   },
   lamps: [
     lamp('#201', 600, 300, { trussOnPlan: 'LX1' }),
@@ -63,8 +86,14 @@ test('every patched light becomes a draft with its type, mode, patch, position a
 test('a number drawn twice gives two lights with their own lamp ids and one patch row', () => {
   const { drafts } = buildDrafts(rider, catalog, { similarity })
   const acl = drafts.filter((d) => d.fixId === '#1')
-  assert.deepEqual(acl.map((d) => d.name), ['ACL<< 1', 'ACL<< 2'])
-  assert.deepEqual(acl.map((d) => d.patch?.lampId), ['#1.1', '#1.2'])
+  assert.deepEqual(
+    acl.map((d) => d.name),
+    ['ACL<< 1', 'ACL<< 2'],
+  )
+  assert.deepEqual(
+    acl.map((d) => d.patch?.lampId),
+    ['#1.1', '#1.2'],
+  )
   assert.ok(acl.every((d) => d.patch?.address === 1))
 })
 
@@ -107,7 +136,7 @@ test('a user override replaces the mapped type', () => {
   assert.ok(drafts.filter((d) => d.fixId === '#1').every((d) => d.profileId === 'martin/atomic-3000'))
 })
 
-test('a light the patch lacks is typed by the user\'s choice, and is then ready', () => {
+test("a light the patch lacks is typed by the user's choice, and is then ready", () => {
   const plain = buildDrafts(rider, catalog, { similarity }).drafts.find((d) => d.key === '#232')!
   assert.equal(plain.status, 'unmapped')
   const typed = buildDrafts(rider, catalog, { similarity, overrides: { '#232': 'stairville/mini-stage-par-7x4w-rgbw' } }).drafts.find((d) => d.key === '#232')!

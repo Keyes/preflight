@@ -30,7 +30,10 @@ const SWATCHES: { name: string; rgb: [number, number, number] }[] = [
 const value = (key: string) => fixture.value?.values[key] ?? profile.value?.defaults[key] ?? 0
 
 const hex = computed(() => {
-  const to = (key: string) => Math.round(value(key) * 255).toString(16).padStart(2, '0')
+  const to = (key: string) =>
+    Math.round(value(key) * 255)
+      .toString(16)
+      .padStart(2, '0')
   return `#${to('red')}${to('green')}${to('blue')}`
 })
 
@@ -91,16 +94,12 @@ const orientation = computed(() => {
 /** What the spread and fan sliders say: the distance between the spots the lights aim at, and the angle between the outer beams. */
 const spreadLabel = computed(() => (Math.abs(rig.aim.spread) < 0.05 ? 'all on the point' : `${rig.aim.spread.toFixed(1)} m apart`))
 const fanLabel = computed(() => (Math.abs(rig.aim.fan) < 0.5 ? 'off' : `${Math.round(rig.aim.fan)}°`))
-const cannotReach = computed(() =>
-  rig.aim.unreachable.map((id) => rig.fixtures.find((f) => f.id === id)?.name).filter((name): name is string => !!name),
-)
+const cannotReach = computed(() => rig.aim.unreachable.map((id) => rig.fixtures.find((f) => f.id === id)?.name).filter((name): name is string => !!name))
 
 const gobos = computed(() => goboThumbnails())
 const goboPicked = computed(() => goboIndex(value('gobo')))
 /** This light has a gobo and is lit, but the lights that project one onto surfaces are all taken. */
-const goboBudgetFull = computed(
-  () => !!fixture.value && goboPicked.value > 0 && value('dimmer') > 0.001 && !stats.projected.includes(fixture.value.id),
-)
+const goboBudgetFull = computed(() => !!fixture.value && goboPicked.value > 0 && value('dimmer') > 0.001 && !stats.projected.includes(fixture.value.id))
 function pickGobo(index: number) {
   if (fixture.value) rig.setValue(fixture.value.id, 'gobo', goboValue(index))
 }
@@ -152,7 +151,10 @@ const groupControls = computed(() => {
 const groupHex = computed(() => {
   const lights = having('color')
   if (!lights.length || groupControls.value.color.mixed) return '#808080'
-  const to = (key: string) => Math.round(valueOf(lights[0], key) * 255).toString(16).padStart(2, '0')
+  const to = (key: string) =>
+    Math.round(valueOf(lights[0], key) * 255)
+      .toString(16)
+      .padStart(2, '0')
   return `#${to('red')}${to('green')}${to('blue')}`
 })
 
@@ -202,9 +204,11 @@ const groupShadow = computed(() => {
 })
 
 function setGroupShadows(event: Event) {
-  rig.updateMany(shadowLights.value.map((f) => f.id), { castShadows: (event.target as HTMLInputElement).checked })
+  rig.updateMany(
+    shadowLights.value.map((f) => f.id),
+    { castShadows: (event.target as HTMLInputElement).checked },
+  )
 }
-
 </script>
 
 <template>
@@ -213,7 +217,10 @@ function setGroupShadows(event: Event) {
       <div>
         <span class="titleline">
           <strong>{{ rig.activeGroup ? rig.activeGroup.name : `${group.length} lights selected` }}</strong>
-          <InfoTip text="Moving a slider sets that value on every selected light that has it. Mixed values show as “mixed” until you move the slider." label="About editing several lights" />
+          <InfoTip
+            text="Moving a slider sets that value on every selected light that has it. Mixed values show as “mixed” until you move the slider."
+            label="About editing several lights"
+          />
         </span>
         <small v-if="rig.activeGroup">Group of {{ group.length }} lights</small>
         <small class="names">{{ group.map((f) => f.name).join(', ') }}</small>
@@ -223,11 +230,15 @@ function setGroupShadows(event: Event) {
 
     <template v-if="rig.aimActive">
       <label class="row">
-        <span class="label">Spread <output>{{ spreadLabel }}</output></span>
+        <span class="label"
+          >Spread <output>{{ spreadLabel }}</output></span
+        >
         <input type="range" min="-4" max="4" step="0.1" :value="rig.aim.spread" @input="rig.setAimSpread(Number(($event.target as HTMLInputElement).value))" />
       </label>
       <label class="row">
-        <span class="label">Fan <output>{{ fanLabel }}</output></span>
+        <span class="label"
+          >Fan <output>{{ fanLabel }}</output></span
+        >
         <input type="range" min="-90" max="90" step="1" :value="rig.aim.fan" @input="rig.setAimFan(Number(($event.target as HTMLInputElement).value))" />
       </label>
       <p v-if="cannotReach.length" class="note">{{ cannotReach.join(', ') }} cannot turn that far and point as close as they can.</p>
@@ -235,7 +246,17 @@ function setGroupShadows(event: Event) {
 
     <h3 class="part">Output</h3>
     <label class="row">
-      <span class="label">Dimmer <ValueField label="Dimmer in percent" :value="groupControls.dimmer.value" :mixed="groupControls.dimmer.mixed" :to-unit="(v) => v * 100" :from-unit="(u) => u / 100" unit="%" @set="rig.setValueMany(groupControls.dimmer.ids, 'dimmer', $event)" /></span>
+      <span class="label"
+        >Dimmer
+        <ValueField
+          label="Dimmer in percent"
+          :value="groupControls.dimmer.value"
+          :mixed="groupControls.dimmer.mixed"
+          :to-unit="(v) => v * 100"
+          :from-unit="(u) => u / 100"
+          unit="%"
+          @set="rig.setValueMany(groupControls.dimmer.ids, 'dimmer', $event)"
+      /></span>
       <input type="range" min="0" max="1" step="0.01" :value="groupControls.dimmer.value" @input="onGroupSlider('dimmer', $event)" />
     </label>
 
@@ -266,7 +287,14 @@ function setGroupShadows(event: Event) {
           <small v-if="groupControls[control].count < group.length">{{ groupControls[control].count }} of {{ group.length }}</small>
           <output>{{ groupText(control, control === 'strobe' ? strobeLabel : percent) }}</output>
         </span>
-        <input type="range" min="0" max="1" :step="control === 'pan' || control === 'tilt' ? 0.0005 : 0.005" :value="groupControls[control].value" @input="onGroupSlider(control, $event)" />
+        <input
+          type="range"
+          min="0"
+          max="1"
+          :step="control === 'pan' || control === 'tilt' ? 0.0005 : 0.005"
+          :value="groupControls[control].value"
+          @input="onGroupSlider(control, $event)"
+        />
       </label>
     </template>
     <div v-if="groupControls.gobo.count" class="row">
@@ -291,11 +319,15 @@ function setGroupShadows(event: Event) {
     </div>
     <template v-if="groupControls.gobo.count && groupHasGobo">
       <label class="row">
-        <span class="label">Gobo rotation <output>{{ groupText('goboAngle', (v) => `${Math.round(v * 360)}°`) }}</output></span>
+        <span class="label"
+          >Gobo rotation <output>{{ groupText('goboAngle', (v) => `${Math.round(v * 360)}°`) }}</output></span
+        >
         <input type="range" min="0" max="1" step="0.0025" :value="groupControls.goboAngle.value" @input="onGroupSlider('goboAngle', $event)" />
       </label>
       <label class="row">
-        <span class="label">Gobo spin <output>{{ groupSpinLabel }}</output></span>
+        <span class="label"
+          >Gobo spin <output>{{ groupSpinLabel }}</output></span
+        >
         <input type="range" min="0" max="1" step="0.005" :value="groupControls.goboSpin.value" @input="onGroupSlider('goboSpin', $event)" />
       </label>
     </template>
@@ -308,13 +340,26 @@ function setGroupShadows(event: Event) {
           <small v-if="groupControls[control].count < group.length">{{ groupControls[control].count }} of {{ group.length }}</small>
           <output>{{ groupText(control, control === 'strobe' ? strobeLabel : percent) }}</output>
         </span>
-        <input type="range" min="0" max="1" :step="control === 'pan' || control === 'tilt' ? 0.0005 : 0.005" :value="groupControls[control].value" @input="onGroupSlider(control, $event)" />
+        <input
+          type="range"
+          min="0"
+          max="1"
+          :step="control === 'pan' || control === 'tilt' ? 0.0005 : 0.005"
+          :value="groupControls[control].value"
+          @input="onGroupSlider(control, $event)"
+        />
       </label>
     </template>
 
     <h3 v-if="shadowLights.length" class="part">Setup</h3>
     <label v-if="shadowLights.length" class="shadow">
-      <input type="checkbox" :checked="groupShadow === 'all'" :indeterminate="groupShadow === 'mixed'" :disabled="!settings.shadows" @change="setGroupShadows" />
+      <input
+        type="checkbox"
+        :checked="groupShadow === 'all'"
+        :indeterminate="groupShadow === 'mixed'"
+        :disabled="!settings.shadows"
+        @change="setGroupShadows"
+      />
       <span>Casts shadows<small v-if="groupShadow === 'mixed'"> (some)</small></span>
     </label>
 
@@ -337,7 +382,16 @@ function setGroupShadows(event: Event) {
 
     <h3 class="part">Output</h3>
     <label class="row">
-      <span class="label">Dimmer <ValueField label="Dimmer in percent" :value="value('dimmer')" :to-unit="(v) => v * 100" :from-unit="(u) => u / 100" unit="%" @set="setValue('dimmer', $event)" /></span>
+      <span class="label"
+        >Dimmer
+        <ValueField
+          label="Dimmer in percent"
+          :value="value('dimmer')"
+          :to-unit="(v) => v * 100"
+          :from-unit="(u) => u / 100"
+          unit="%"
+          @set="setValue('dimmer', $event)"
+      /></span>
       <input type="range" min="0" max="1" step="0.01" :value="value('dimmer')" @input="onSlider('dimmer', $event)" />
     </label>
 
@@ -357,24 +411,51 @@ function setGroupShadows(event: Event) {
     </div>
 
     <label v-if="profile.controls.strobe" class="row">
-      <span class="label">Strobe <output>{{ strobeLabel(value('strobe')) }}</output></span>
+      <span class="label"
+        >Strobe <output>{{ strobeLabel(value('strobe')) }}</output></span
+      >
       <input type="range" min="0" max="1" step="0.005" :value="value('strobe')" @input="onSlider('strobe', $event)" />
-      <small v-if="value('strobe') > 0.01 && !settings.previewStrobe" class="hint">Shown steady. Turn on “Flash strobing lights” under Settings › Preferences to see it flash.</small>
+      <small v-if="value('strobe') > 0.01 && !settings.previewStrobe" class="hint"
+        >Shown steady. Turn on “Flash strobing lights” under Settings › Preferences to see it flash.</small
+      >
     </label>
 
     <h3 v-if="hasBeam" class="part">Beam</h3>
     <label v-if="profile.controls.zoom" class="row">
-      <span class="label">Zoom <ValueField label="Beam angle in degrees" :value="value('zoom')" :to-unit="(v) => beamAngleDegrees(profile!, v)" :from-unit="zoomFromDegrees" unit="° beam" @set="setValue('zoom', $event)" /></span>
+      <span class="label"
+        >Zoom
+        <ValueField
+          label="Beam angle in degrees"
+          :value="value('zoom')"
+          :to-unit="(v) => beamAngleDegrees(profile!, v)"
+          :from-unit="zoomFromDegrees"
+          unit="° beam"
+          @set="setValue('zoom', $event)"
+      /></span>
       <input type="range" min="0" max="1" step="0.005" :value="value('zoom')" @input="onSlider('zoom', $event)" />
     </label>
 
     <label v-if="profile.controls.focus" class="row">
-      <span class="label">Focus <span>sharp at <ValueField label="Focus distance in meters" :value="value('focus')" :to-unit="focusDistance" :from-unit="focusFromMeters" :digits="1" unit="m" @set="setValue('focus', $event)" /></span></span>
+      <span class="label"
+        >Focus
+        <span
+          >sharp at
+          <ValueField
+            label="Focus distance in meters"
+            :value="value('focus')"
+            :to-unit="focusDistance"
+            :from-unit="focusFromMeters"
+            :digits="1"
+            unit="m"
+            @set="setValue('focus', $event)" /></span
+      ></span>
       <input type="range" min="0" max="1" step="0.005" :value="value('focus')" @input="onSlider('focus', $event)" />
     </label>
 
     <div v-if="profile.controls.gobo" class="row">
-      <span class="label">Gobo <output>{{ goboPicked ? GOBOS[goboPicked - 1].name : 'open' }}</output></span>
+      <span class="label"
+        >Gobo <output>{{ goboPicked ? GOBOS[goboPicked - 1].name : 'open' }}</output></span
+      >
       <div class="gobos" role="group" aria-label="Gobo">
         <button :class="{ on: !goboPicked }" title="Open (no gobo)" aria-label="Open" @click="pickGobo(0)">○</button>
         <button
@@ -390,25 +471,49 @@ function setGroupShadows(event: Event) {
       </div>
     </div>
     <template v-if="profile.controls.gobo && goboPicked">
-      <p v-if="goboBudgetFull" class="note">Only {{ MAX_GOBO_LIGHTS }} lights project a gobo onto surfaces at once, and they are all taken. This one shows its pattern in the haze only.</p>
+      <p v-if="goboBudgetFull" class="note">
+        Only {{ MAX_GOBO_LIGHTS }} lights project a gobo onto surfaces at once, and they are all taken. This one shows its pattern in the haze only.
+      </p>
       <label class="row">
-        <span class="label">Gobo rotation <output>{{ Math.round(value('goboAngle') * 360) }}°</output></span>
+        <span class="label"
+          >Gobo rotation <output>{{ Math.round(value('goboAngle') * 360) }}°</output></span
+        >
         <input type="range" min="0" max="1" step="0.0025" :value="value('goboAngle')" @input="onSlider('goboAngle', $event)" />
       </label>
       <label class="row">
-        <span class="label">Gobo spin <output>{{ spinLabel }}</output></span>
+        <span class="label"
+          >Gobo spin <output>{{ spinLabel }}</output></span
+        >
         <input type="range" min="0" max="1" step="0.005" :value="value('goboSpin')" @input="onSlider('goboSpin', $event)" />
       </label>
     </template>
 
     <h3 v-if="profile.controls.pan || profile.controls.tilt" class="part">Position</h3>
     <label v-if="profile.controls.pan" class="row">
-      <span class="label">Pan <ValueField label="Pan in degrees" :value="value('pan')" :to-unit="(v) => travelDegrees(v, profile!.panRange)" :from-unit="(u) => u / profile!.panRange + 0.5" unit="°" @set="setValue('pan', $event)" /></span>
+      <span class="label"
+        >Pan
+        <ValueField
+          label="Pan in degrees"
+          :value="value('pan')"
+          :to-unit="(v) => travelDegrees(v, profile!.panRange)"
+          :from-unit="(u) => u / profile!.panRange + 0.5"
+          unit="°"
+          @set="setValue('pan', $event)"
+      /></span>
       <input type="range" min="0" max="1" step="0.0005" :value="value('pan')" @input="onSlider('pan', $event)" />
     </label>
 
     <label v-if="profile.controls.tilt" class="row">
-      <span class="label">Tilt <ValueField label="Tilt in degrees" :value="value('tilt')" :to-unit="(v) => travelDegrees(v, profile!.tiltRange)" :from-unit="(u) => u / profile!.tiltRange + 0.5" unit="°" @set="setValue('tilt', $event)" /></span>
+      <span class="label"
+        >Tilt
+        <ValueField
+          label="Tilt in degrees"
+          :value="value('tilt')"
+          :to-unit="(v) => travelDegrees(v, profile!.tiltRange)"
+          :from-unit="(u) => u / profile!.tiltRange + 0.5"
+          unit="°"
+          @set="setValue('tilt', $event)"
+      /></span>
       <input type="range" min="0" max="1" step="0.0005" :value="value('tilt')" @input="onSlider('tilt', $event)" />
     </label>
 
@@ -424,7 +529,9 @@ function setGroupShadows(event: Event) {
       <input type="checkbox" :checked="castsShadow" :disabled="!settings.shadows" @change="setCastsShadow" />
       <span>Casts shadows</span>
     </label>
-    <p v-if="shadowBudgetFull" class="note">Only {{ MAX_SHADOW_LIGHTS }} lights cast shadows at once, and they are all taken. Turn it off on another light to free one.</p>
+    <p v-if="shadowBudgetFull" class="note">
+      Only {{ MAX_SHADOW_LIGHTS }} lights cast shadows at once, and they are all taken. Turn it off on another light to free one.
+    </p>
 
     <footer>
       <button @click="rig.duplicate(fixture.id)">Duplicate</button>

@@ -42,7 +42,11 @@ export async function renderPage(pdfPath: string, page: number, dpi = 300): Prom
  * shrunk by the service anyway, so the fractions the model answers in stay right). With `grid`, thin labelled lines every
  * tenth of the region are drawn over it, which makes the model's position estimates much better.
  */
-export function cropPng(image: PageImage, region: Region = WHOLE, opts: { maxSide?: number; grid?: boolean } = {}): { png: Buffer; width: number; height: number } {
+export function cropPng(
+  image: PageImage,
+  region: Region = WHOLE,
+  opts: { maxSide?: number; grid?: boolean } = {},
+): { png: Buffer; width: number; height: number } {
   const sx = Math.round(region.x0 * image.width)
   const sy = Math.round(region.y0 * image.height)
   const sw = Math.max(1, Math.round((region.x1 - region.x0) * image.width))

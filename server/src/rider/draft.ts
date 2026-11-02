@@ -180,8 +180,17 @@ export function buildDrafts(rider: RiderFile, catalog: readonly CatalogFixture[]
     .map(([name, list]) => ({ name, keys: list.sort((a, b) => a.placement!.position[0] - b.placement!.position[0]).map((d) => d.key) }))
 
   const unmapped = drafts.filter((d) => d.status === 'unmapped')
-  if (unmapped.length) issues.push(`${unmapped.length} ${unmapped.length === 1 ? 'light needs' : 'lights need'} a fixture type chosen: ${unmapped.map((d) => d.fixId).slice(0, 12).join(', ')}${unmapped.length > 12 ? ', …' : ''}`)
+  if (unmapped.length)
+    issues.push(
+      `${unmapped.length} ${unmapped.length === 1 ? 'light needs' : 'lights need'} a fixture type chosen: ${unmapped
+        .map((d) => d.fixId)
+        .slice(0, 12)
+        .join(', ')}${unmapped.length > 12 ? ', …' : ''}`,
+    )
   const unplaced = drafts.filter((d) => d.status === 'unplaced')
-  if (unplaced.length) issues.push(`${unplaced.length} patched ${unplaced.length === 1 ? 'light is' : 'lights are'} not on the plan, so they have no position: ${unplaced.map((d) => d.fixId).join(', ')}`)
+  if (unplaced.length)
+    issues.push(
+      `${unplaced.length} patched ${unplaced.length === 1 ? 'light is' : 'lights are'} not on the plan, so they have no position: ${unplaced.map((d) => d.fixId).join(', ')}`,
+    )
   return { drafts, groups: orderedGroups, issues }
 }

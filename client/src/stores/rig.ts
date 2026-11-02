@@ -44,9 +44,7 @@ export const useRig = defineStore('rig', () => {
   const fixtures = computed(() => venues.current?.fixtures ?? [])
   const selected = computed(() => fixtures.value.find((f) => f.id === selectedId.value))
   /** All selected fixtures, in selection order. */
-  const selection = computed(() =>
-    selectedIds.value.map((id) => fixtures.value.find((f) => f.id === id)).filter((f): f is Fixture => !!f),
-  )
+  const selection = computed(() => selectedIds.value.map((id) => fixtures.value.find((f) => f.id === id)).filter((f): f is Fixture => !!f))
 
   // Edits apply to local state immediately and are saved shortly after the last change.
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -126,7 +124,8 @@ export const useRig = defineStore('rig', () => {
     const history = histories.get(pendingVenue)
     const venue = venues.venues.find((v) => v.id === pendingVenue)
     if (!history || !venue) return
-    if (history.record(venue.fixtures ?? [], pendingAll ? 'all' : [...pendingIds], pendingLabel, pendingKey, performance.now(), venue.groups ?? [])) historyVersion.value++
+    if (history.record(venue.fixtures ?? [], pendingAll ? 'all' : [...pendingIds], pendingLabel, pendingKey, performance.now(), venue.groups ?? []))
+      historyVersion.value++
   }
 
   const currentHistory = () => (venues.currentId ? histories.get(venues.currentId) : undefined)
@@ -376,7 +375,13 @@ export const useRig = defineStore('rig', () => {
   function removeFromGroup(id: string, fixtureId: string) {
     const group = groupList().find((g) => g.id === id)
     if (!group) return
-    setGroupMembers(id, groupMembers(group).map((f) => f.id).filter((x) => x !== fixtureId), 'Remove from group')
+    setGroupMembers(
+      id,
+      groupMembers(group)
+        .map((f) => f.id)
+        .filter((x) => x !== fixtureId),
+      'Remove from group',
+    )
   }
 
   /** Moves a light one place earlier (-1) or later (+1) in its group. */
@@ -408,7 +413,9 @@ export const useRig = defineStore('rig', () => {
     list().push(...newFixtures)
     groupList().push(...newGroups)
     selectedIds.value = newFixtures.map((f) => f.id)
-    say(`Added ${newFixtures.length} ${newFixtures.length === 1 ? 'light' : 'lights'}${newGroups.length ? ` and ${newGroups.length} ${newGroups.length === 1 ? 'group' : 'groups'}` : ''}`)
+    say(
+      `Added ${newFixtures.length} ${newFixtures.length === 1 ? 'light' : 'lights'}${newGroups.length ? ` and ${newGroups.length} ${newGroups.length === 1 ? 'group' : 'groups'}` : ''}`,
+    )
     schedulePersist()
   }
 
@@ -535,5 +542,64 @@ export const useRig = defineStore('rig', () => {
     placing.value = true
   }
 
-  return { importLights, forgetHistory, aim, aimActive, startAim, cancelAim, toggleAim, aimAt, setAimSpread, setAimFan, applyAim, groups, activeGroup, groupMembers, createGroup, renameGroup, deleteGroup, setGroupMembers, addToGroup, removeFromGroup, moveInGroup, selectGroup, undo, redo, canUndo, canRedo, undoLabel, redoLabel, historyVersion, fixtures, selected, selection, selectedId, selectedIds, select, selectMany, toggle, isSelected, removeMany, duplicateMany, updateMany, setValueMany, setValuesMany, placing, pickerOpen, pending, startPlacing, gizmoMode, rotationReadout, error, add, update, setValue, setValues, remove, duplicate, togglePlacing, flush }
+  return {
+    importLights,
+    forgetHistory,
+    aim,
+    aimActive,
+    startAim,
+    cancelAim,
+    toggleAim,
+    aimAt,
+    setAimSpread,
+    setAimFan,
+    applyAim,
+    groups,
+    activeGroup,
+    groupMembers,
+    createGroup,
+    renameGroup,
+    deleteGroup,
+    setGroupMembers,
+    addToGroup,
+    removeFromGroup,
+    moveInGroup,
+    selectGroup,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+    undoLabel,
+    redoLabel,
+    historyVersion,
+    fixtures,
+    selected,
+    selection,
+    selectedId,
+    selectedIds,
+    select,
+    selectMany,
+    toggle,
+    isSelected,
+    removeMany,
+    duplicateMany,
+    updateMany,
+    setValueMany,
+    setValuesMany,
+    placing,
+    pickerOpen,
+    pending,
+    startPlacing,
+    gizmoMode,
+    rotationReadout,
+    error,
+    add,
+    update,
+    setValue,
+    setValues,
+    remove,
+    duplicate,
+    togglePlacing,
+    flush,
+  }
 })

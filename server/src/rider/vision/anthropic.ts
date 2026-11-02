@@ -40,7 +40,10 @@ class AnthropicVision implements VisionProvider {
     })
     const body = (await response.json().catch(() => ({}))) as MessageResponse
     if (!response.ok) throw new Error(`Anthropic API ${response.status}: ${body.error?.message ?? 'no details'}`)
-    return (body.content ?? []).filter((block) => block.type === 'text').map((block) => block.text ?? '').join('')
+    return (body.content ?? [])
+      .filter((block) => block.type === 'text')
+      .map((block) => block.text ?? '')
+      .join('')
   }
 }
 

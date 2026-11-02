@@ -77,7 +77,10 @@ export interface Absorber {
 export function crowdAbsorbers(crowd: Crowd): Absorber[] {
   if (!crowd.shown) return []
   const shown = crowd.zones.filter((z) => z.shown)
-  const limit = crowdThreshold(crowd, shown.reduce((sum, z) => sum + fullCount(z), 0))
+  const limit = crowdThreshold(
+    crowd,
+    shown.reduce((sum, z) => sum + fullCount(z), 0),
+  )
   if (limit <= 0) return []
   return shown
     .sort((a, b) => zoneArea(b) - zoneArea(a))

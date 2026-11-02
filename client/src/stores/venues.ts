@@ -233,5 +233,29 @@ export const useVenues = defineStore('venues', () => {
     if (updated.status === 'error') throw new Error(updated.error ?? 'conversion failed')
   }
 
-  return { venues, currentId, current, loading, error, windowOpen, select, upsert, load, create, rename, remove, duplicate, addDemo, reconvert, setTagHidden, setHiddenTags, reorder, replaceModel, setAtmosphere, setCrowd, currentViews, setViews }
+  return {
+    venues,
+    currentId,
+    current,
+    loading,
+    error,
+    windowOpen,
+    select,
+    upsert,
+    load,
+    create,
+    rename,
+    remove,
+    duplicate,
+    addDemo,
+    reconvert,
+    setTagHidden,
+    setHiddenTags,
+    reorder,
+    replaceModel,
+    setAtmosphere,
+    setCrowd,
+    currentViews,
+    setViews,
+  }
 })

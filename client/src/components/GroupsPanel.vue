@@ -48,18 +48,31 @@ function menuItems(id: string): MenuItem[] {
     ...(n ? [{ label: `Set to the ${n} selected`, action: () => rig.setGroupMembers(id, rig.selectedIds, 'Set group to selection') }] : []),
     ...(n ? [{ label: `Add the ${n} selected`, action: () => rig.addToGroup(id, rig.selectedIds) }] : []),
     ...(store.venues.length > 1
-      ? [{ label: 'Copy to another venue…', action: () => transfer.openCopy(rig.groupMembers(rig.groups.find((g) => g.id === id)!).map((f) => f.id), [id]) }]
+      ? [
+          {
+            label: 'Copy to another venue…',
+            action: () =>
+              transfer.openCopy(
+                rig.groupMembers(rig.groups.find((g) => g.id === id)!).map((f) => f.id),
+                [id],
+              ),
+          },
+        ]
       : []),
     { label: 'Delete group', danger: true, action: () => rig.deleteGroup(id) },
   ]
 }
-
 </script>
 
 <template>
   <SidebarSection v-if="store.current?.status === 'ready'" id="groups" title="Groups" :tip="groupsTip" :count="rig.groups.length || undefined">
     <template #actions>
-      <button class="link" :disabled="!rig.selectedIds.length" :title="rig.selectedIds.length ? 'Save the selected lights as a group' : 'Select some lights first'" @click="createFromSelection">
+      <button
+        class="link"
+        :disabled="!rig.selectedIds.length"
+        :title="rig.selectedIds.length ? 'Save the selected lights as a group' : 'Select some lights first'"
+        @click="createFromSelection"
+      >
         + From selection
       </button>
     </template>
@@ -67,8 +80,25 @@ function menuItems(id: string): MenuItem[] {
     <ul v-if="rig.groups.length">
       <li v-for="group in rig.groups" :key="group.id">
         <div class="row" @contextmenu="openMenu($event, group.id)">
-          <button class="chevron" :aria-label="open[group.id] ? 'Hide lights' : 'Show lights'" :aria-expanded="!!open[group.id]" @click="open[group.id] = !open[group.id]">
-            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: open[group.id] ? 'rotate(90deg)' : 'none' }"><path d="m9 6 6 6-6 6" /></svg>
+          <button
+            class="chevron"
+            :aria-label="open[group.id] ? 'Hide lights' : 'Show lights'"
+            :aria-expanded="!!open[group.id]"
+            @click="open[group.id] = !open[group.id]"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              width="12"
+              height="12"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              :style="{ transform: open[group.id] ? 'rotate(90deg)' : 'none' }"
+            >
+              <path d="m9 6 6 6-6 6" />
+            </svg>
           </button>
           <InlineRename v-if="renamingId === group.id" :initial="group.name" @commit="commitRename(group.id, $event)" @cancel="renamingId = null" />
           <button v-else class="main" :class="{ active: rig.activeGroup?.id === group.id }" @click="onGroupClick($event, group)">
@@ -88,7 +118,14 @@ function menuItems(id: string): MenuItem[] {
               </button>
               <span class="tools">
                 <button :disabled="i === 0" title="Move earlier" aria-label="Move earlier" @click="rig.moveInGroup(group.id, light.id, -1)">↑</button>
-                <button :disabled="i === rig.groupMembers(group).length - 1" title="Move later" aria-label="Move later" @click="rig.moveInGroup(group.id, light.id, 1)">↓</button>
+                <button
+                  :disabled="i === rig.groupMembers(group).length - 1"
+                  title="Move later"
+                  aria-label="Move later"
+                  @click="rig.moveInGroup(group.id, light.id, 1)"
+                >
+                  ↓
+                </button>
                 <button title="Take out of the group" aria-label="Take out of the group" @click="rig.removeFromGroup(group.id, light.id)">×</button>
               </span>
             </li>

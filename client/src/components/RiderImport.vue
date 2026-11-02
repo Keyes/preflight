@@ -98,7 +98,9 @@ const scaleCheck = computed(() => {
 })
 const scaleWarning = computed(() => {
   const r = scaleCheck.value?.ratio
-  return r !== undefined && Math.abs(r - 1) > 0.08 ? `The plan's stage line says ${(100 * r).toFixed(0)}% of this scale: the two points may not be the same spots in the plan and the venue.` : ''
+  return r !== undefined && Math.abs(r - 1) > 0.08
+    ? `The plan's stage line says ${(100 * r).toFixed(0)}% of this scale: the two points may not be the same spots in the plan and the venue.`
+    : ''
 })
 
 // --- review ---
@@ -166,15 +168,24 @@ function runImport() {
   done.value = `Added ${r.added} lights${r.replaced ? `, replaced ${r.replaced}` : ''}${r.skipped ? `, skipped ${r.skipped} already imported` : ''}.`
 }
 
-watch(() => rider.open, (open) => open && catalog.load(), { immediate: true })
-watch(() => rider.step, () => (done.value = ''))
+watch(
+  () => rider.open,
+  (open) => open && catalog.load(),
+  { immediate: true },
+)
+watch(
+  () => rider.step,
+  () => (done.value = ''),
+)
 const venueName = computed(() => venues.current?.name ?? '')
 </script>
 
 <template>
   <aside class="panel" role="dialog" aria-label="Import tech rider" @pointerdown.stop @keydown.stop>
     <header>
-      <h2>Import tech rider <span class="venue">· {{ venueName }}</span></h2>
+      <h2>
+        Import tech rider <span class="venue">· {{ venueName }}</span>
+      </h2>
       <button class="close" aria-label="Close" @click="rider.close()">×</button>
     </header>
     <nav class="steps">
@@ -186,7 +197,8 @@ const venueName = computed(() => venues.current?.name ?? '')
         :title="blockedBecause(s.id)"
         @click="go(s.id)"
       >
-        <span class="mark">{{ stepDone(s.id) && rider.step !== s.id ? '✓' : i + 1 }}</span>{{ s.label }}
+        <span class="mark">{{ stepDone(s.id) && rider.step !== s.id ? '✓' : i + 1 }}</span
+        >{{ s.label }}
       </button>
     </nav>
 
@@ -200,7 +212,13 @@ const venueName = computed(() => venues.current?.name ?? '')
           <h3>This venue's rider</h3>
           <p>
             Patch: <b>{{ rider.rider.patch.rows.length }}</b> rows<span v-if="rider.rider.patch.date"> (table dated {{ rider.rider.patch.date }})</span>.
-            <template v-if="rider.rider.plan">Plan: <b>{{ rider.rider.lamps?.length ?? 0 }}</b> lights on {{ Object.keys(rider.rider.plan.trusses).length }} trusses<span v-if="rider.rider.plan.date"> (plan dated {{ rider.rider.plan.date }})</span>.</template>
+            <template v-if="rider.rider.plan"
+              >Plan: <b>{{ rider.rider.lamps?.length ?? 0 }}</b> lights on {{ Object.keys(rider.rider.plan.trusses).length }} trusses<span
+                v-if="rider.rider.plan.date"
+              >
+                (plan dated {{ rider.rider.plan.date }})</span
+              >.</template
+            >
             <template v-else>The plan has not been read yet.</template>
           </p>
           <ul v-if="rider.rider.issues.length" class="plain">
@@ -227,7 +245,9 @@ const venueName = computed(() => venues.current?.name ?? '')
             <button class="link" @click="changingKey = true">Change</button>
           </div>
           <div v-else class="row">
-            <select v-model="rider.provider" aria-label="Vision provider"><option value="anthropic">Anthropic</option></select>
+            <select v-model="rider.provider" aria-label="Vision provider">
+              <option value="anthropic">Anthropic</option>
+            </select>
             <input v-model="rider.apiKey" type="password" placeholder="API key" autocomplete="off" aria-label="API key" />
           </div>
           <div class="row">
@@ -239,23 +259,36 @@ const venueName = computed(() => venues.current?.name ?? '')
 
       <!-- 2: place the plan -->
       <template v-else-if="rider.step === 'calibrate'">
-        <p class="hint">Tell preflight where the plan sits in the venue: pick two spots that are easy to find in both, such as the two front corners of the stage. Select a point, click it on the plan, then click <b>Pick in venue</b> and click the same spot in the 3D view. The view looks down on the venue and hides the crowd and the lights meanwhile; it goes back when you leave this step.</p>
+        <p class="hint">
+          Tell preflight where the plan sits in the venue: pick two spots that are easy to find in both, such as the two front corners of the stage. Select a
+          point, click it on the plan, then click <b>Pick in venue</b> and click the same spot in the 3D view. The view looks down on the venue and hides the
+          crowd and the lights meanwhile; it goes back when you leave this step.
+        </p>
         <div class="row">
           <button @click="rider.viewTurns++">Turn the view ⟳</button>
           <span class="hint">so the stage is at the top, like on the plan</span>
         </div>
-        <label class="check"><input v-model="rider.hideClutter" type="checkbox" /> Hide small objects on the floor (speaker stacks, truss towers…) so the spots under them can be picked</label>
+        <label class="check"
+          ><input v-model="rider.hideClutter" type="checkbox" /> Hide small objects on the floor (speaker stacks, truss towers…) so the spots under them can be
+          picked</label
+        >
         <div v-if="rider.planImage" class="plan" :class="{ crosshair: true }">
           <img ref="image" :src="rider.planImage.url" alt="The plan page of the rider" @click="onPlanClick" />
           <span v-for="dot in lampDots" :key="dot.id" class="dot" :style="dot.style" />
-          <span v-for="(p, i) in rider.planPoints" :key="i" v-show="p" class="ref" :class="{ on: activePoint === i }" :style="p ? marker(p) : {}">{{ 'AB'[i] }}</span>
+          <span v-for="(p, i) in rider.planPoints" :key="i" v-show="p" class="ref" :class="{ on: activePoint === i }" :style="p ? marker(p) : {}">{{
+            'AB'[i]
+          }}</span>
         </div>
         <ul class="plain points">
           <li v-for="i in [0, 1]" :key="i" :class="{ on: activePoint === i }">
             <label><input v-model="activePoint" type="radio" :value="i" /> Point {{ 'AB'[i] }}</label>
             <span class="coords">{{ rider.planPoints[i] ? `plan ${rider.planPoints[i]![0]}, ${rider.planPoints[i]![1]}` : 'click it on the plan' }}</span>
-            <button :class="{ armed: rider.pickingWorld === i }" @click="rider.pickingWorld = rider.pickingWorld === i ? null : i">{{ rider.pickingWorld === i ? 'Click in the 3D view…' : 'Pick in venue' }}</button>
-            <span class="coords">{{ rider.worldPoints[i] ? `venue ${rider.worldPoints[i]![0].toFixed(2)}, ${rider.worldPoints[i]![1].toFixed(2)} m` : 'not set' }}</span>
+            <button :class="{ armed: rider.pickingWorld === i }" @click="rider.pickingWorld = rider.pickingWorld === i ? null : i">
+              {{ rider.pickingWorld === i ? 'Click in the 3D view…' : 'Pick in venue' }}
+            </button>
+            <span class="coords">{{
+              rider.worldPoints[i] ? `venue ${rider.worldPoints[i]![0].toFixed(2)}, ${rider.worldPoints[i]![1].toFixed(2)} m` : 'not set'
+            }}</span>
           </li>
         </ul>
         <p v-if="rider.similarity" class="ok">Placed: {{ scaleCheck?.text ?? `${rider.similarity.scale.toFixed(4)} m per plan pixel` }}.</p>
@@ -265,8 +298,12 @@ const venueName = computed(() => venues.current?.name ?? '')
       <!-- 3: review -->
       <template v-else>
         <nav v-if="rider.result" class="pages" role="tablist" aria-label="Review">
-          <button role="tab" :aria-selected="reviewTab === 'check'" :class="{ on: reviewTab === 'check' }" @click="reviewTab = 'check'">Check <span class="count">{{ flagCount }}</span></button>
-          <button role="tab" :aria-selected="reviewTab === 'lights'" :class="{ on: reviewTab === 'lights' }" @click="reviewTab = 'lights'">Lights <span class="count">{{ rider.importable.length }}</span></button>
+          <button role="tab" :aria-selected="reviewTab === 'check'" :class="{ on: reviewTab === 'check' }" @click="reviewTab = 'check'">
+            Check <span class="count">{{ flagCount }}</span>
+          </button>
+          <button role="tab" :aria-selected="reviewTab === 'lights'" :class="{ on: reviewTab === 'lights' }" @click="reviewTab = 'lights'">
+            Lights <span class="count">{{ rider.importable.length }}</span>
+          </button>
           <button role="tab" :aria-selected="reviewTab === 'options'" :class="{ on: reviewTab === 'options' }" @click="reviewTab = 'options'">Options</button>
         </nav>
 
@@ -291,13 +328,50 @@ const venueName = computed(() => venues.current?.name ?? '')
           <h3>Lights ({{ rider.importable.length }} of {{ rider.result.drafts.length }} will be imported)</h3>
           <div class="tablewrap">
             <table>
-              <thead><tr><th /><th>#</th><th>Name</th><th>Type</th><th>Mode</th><th>Addr</th><th>Hangs</th><th /></tr></thead>
+              <thead>
+                <tr>
+                  <th />
+                  <th>#</th>
+                  <th>Name</th>
+                  <th>Type</th>
+                  <th>Mode</th>
+                  <th>Addr</th>
+                  <th>Hangs</th>
+                  <th />
+                </tr>
+              </thead>
               <tbody>
-                <tr v-for="d in rider.result.drafts" :key="d.key" :class="[d.status, { off: rider.excluded.has(d.key), picked: rider.selectedKeys.includes(d.key) }]" :title="d.notes.join('\n')" @click="d.placement && (isAdd($event) ? rider.toggleSelected(d.key) : rider.select([d.key]))">
-                  <td><input type="checkbox" :checked="!rider.excluded.has(d.key)" :disabled="!d.profileId || !d.placement" :aria-label="`Import ${d.name}`" @click.stop @change="rider.toggleIncluded(d.key)" /></td>
+                <tr
+                  v-for="d in rider.result.drafts"
+                  :key="d.key"
+                  :class="[d.status, { off: rider.excluded.has(d.key), picked: rider.selectedKeys.includes(d.key) }]"
+                  :title="d.notes.join('\n')"
+                  @click="d.placement && (isAdd($event) ? rider.toggleSelected(d.key) : rider.select([d.key]))"
+                >
+                  <td>
+                    <input
+                      type="checkbox"
+                      :checked="!rider.excluded.has(d.key)"
+                      :disabled="!d.profileId || !d.placement"
+                      :aria-label="`Import ${d.name}`"
+                      @click.stop
+                      @change="rider.toggleIncluded(d.key)"
+                    />
+                  </td>
                   <td>{{ d.lampId ?? d.fixId }}</td>
                   <td class="name">{{ d.name }}</td>
-                  <td><input class="type" list="rider-types" :value="labelOf(d.profileId)" :placeholder="d.status === 'ignored' ? '' : 'choose…'" :aria-label="`Fixture type of ${d.name}`" :disabled="d.status === 'ignored'" @click.stop @change="onType(d, $event)" /></td>
+                  <td>
+                    <input
+                      class="type"
+                      list="rider-types"
+                      :value="labelOf(d.profileId)"
+                      :placeholder="d.status === 'ignored' ? '' : 'choose…'"
+                      :aria-label="`Fixture type of ${d.name}`"
+                      :disabled="d.status === 'ignored'"
+                      @click.stop
+                      @change="onType(d, $event)"
+                    />
+                  </td>
                   <td>{{ d.mode ?? '' }}</td>
                   <td>{{ d.patch ? `${d.patch.universe}.${d.patch.address}` : '' }}</td>
                   <td>{{ heightText(d) }}</td>
@@ -311,7 +385,10 @@ const venueName = computed(() => venues.current?.name ?? '')
 
         <section v-if="rider.result" v-show="reviewTab === 'lights'" class="move">
           <h3>Move lights</h3>
-          <p class="hint">Select lights by clicking a dot in the 3D view or a row (Ctrl or Shift adds), or a whole truss below. Drag the arrows in the view, or type a distance. Dots: green on a truss, amber height assumed, white selected.</p>
+          <p class="hint">
+            Select lights by clicking a dot in the 3D view or a row (Ctrl or Shift adds), or a whole truss below. Drag the arrows in the view, or type a
+            distance. Dots: green on a truss, amber height assumed, white selected.
+          </p>
           <div class="row chips">
             <button v-for="g in rider.result.groups" :key="g.name" @click="rider.selectGroup(g.name, isAdd($event))">{{ g.name }} ({{ g.keys.length }})</button>
             <button @click="rider.selectAll()">All</button>
@@ -319,8 +396,16 @@ const venueName = computed(() => venues.current?.name ?? '')
           </div>
           <div v-if="rider.selectedKeys.length" class="row">
             <span>{{ rider.selectedKeys.length }} selected · move by</span>
-            <label v-for="(axis, i) in ['X', 'Y', 'Z']" :key="axis" class="axis">{{ axis }}
-              <input type="number" step="0.1" :value="move[i]" :aria-label="`Move by ${axis} in meters`" @change="setMove(i, $event)" @keydown.enter="applyMove" />
+            <label v-for="(axis, i) in ['X', 'Y', 'Z']" :key="axis" class="axis"
+              >{{ axis }}
+              <input
+                type="number"
+                step="0.1"
+                :value="move[i]"
+                :aria-label="`Move by ${axis} in meters`"
+                @change="setMove(i, $event)"
+                @keydown.enter="applyMove"
+              />
             </label>
             <span>m</span>
             <button :disabled="move.every((n) => n === 0)" @click="applyMove">Move</button>
@@ -338,7 +423,10 @@ const venueName = computed(() => venues.current?.name ?? '')
           <label><input v-model="rider.measure" type="checkbox" /> Hang lights that are on no truss from the ceiling measured in the model</label>
           <label v-if="rider.alreadyThere.length">
             {{ rider.alreadyThere.length }} of these came from this rider before:
-            <select v-model="rider.onExisting"><option value="skip">keep them as they are</option><option value="replace">replace them</option></select>
+            <select v-model="rider.onExisting">
+              <option value="skip">keep them as they are</option>
+              <option value="replace">replace them</option>
+            </select>
           </label>
         </section>
       </template>

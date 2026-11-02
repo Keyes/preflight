@@ -24,9 +24,10 @@ export function convertSkp(skp: string, glb: string): Promise<void> {
     execFile(CONVERTER, [skp, tmp], { timeout: 120_000, maxBuffer: 1 << 20 }, async (err, _out, stderr) => {
       if (err) {
         await rm(tmp, { force: true })
-        const reason = (err as NodeJS.ErrnoException).code === 'ENOENT'
-          ? 'the SketchUp converter is not built (see "The SketchUp SDK" in the README), or upload the model as glTF (.glb) instead'
-          : stderr.trim() || err.message
+        const reason =
+          (err as NodeJS.ErrnoException).code === 'ENOENT'
+            ? 'the SketchUp converter is not built (see "The SketchUp SDK" in the README), or upload the model as glTF (.glb) instead'
+            : stderr.trim() || err.message
         reject(new Error(reason))
         return
       }

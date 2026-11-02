@@ -245,8 +245,8 @@ function onListDragLeave(event: DragEvent) {
             <input ref="fileInput" type="file" :accept="MODEL_ACCEPT" :disabled="busy" aria-label="Model file" @change="onFile" />
           </div>
           <p class="hint">
-            A glTF model (.glb, or a .gltf with everything embedded) in meters, as Blender and most 3D programs export it, or a
-            SketchUp file (.skp), which needs the SketchUp converter to be built.
+            A glTF model (.glb, or a .gltf with everything embedded) in meters, as Blender and most 3D programs export it, or a SketchUp file (.skp), which
+            needs the SketchUp converter to be built.
           </p>
           <button class="primary" type="submit" :disabled="busy || !name.trim() || !file">
             {{ busy ? (converts(file) ? 'Uploading and converting…' : 'Uploading…') : 'Create venue' }}
@@ -258,8 +258,8 @@ function onListDragLeave(event: DragEvent) {
         <p v-if="message" class="error">{{ message }}</p>
         <div v-if="!store.loading && store.venues.length === 0 && !showForm" class="empty">
           <p>
-            No venues yet. Create one from a 3D model of the room (glTF or SketchUp); its lights, groups and camera views are kept with it.
-            Or look around the demo club first: a small club with a stage, a truss rig and 18 lights already hung.
+            No venues yet. Create one from a 3D model of the room (glTF or SketchUp); its lights, groups and camera views are kept with it. Or look around the
+            demo club first: a small club with a stage, a truss rig and 18 lights already hung.
           </p>
           <button class="primary" :disabled="addingDemo" @click="addDemo">{{ addingDemo ? 'Opening…' : 'Open the demo club' }}</button>
         </div>
@@ -299,31 +299,60 @@ function onListDragLeave(event: DragEvent) {
                 <span class="meta">{{ venue.status === 'ready' ? counts(venue) : '' }}</span>
               </button>
               <span class="actions">
-                <button v-if="venue.id !== store.currentId && venue.status === 'ready' && venue.fixtures?.length" title="Bring lights and groups of this venue into the open one" @click="importFrom(venue)">
+                <button
+                  v-if="venue.id !== store.currentId && venue.status === 'ready' && venue.fixtures?.length"
+                  title="Bring lights and groups of this venue into the open one"
+                  @click="importFrom(venue)"
+                >
                   Import lights…
                 </button>
-                <button :disabled="working === venue.id" title="Make a whole copy of this venue: model, lights, groups, crowd, haze and views" @click="duplicate(venue)">
+                <button
+                  :disabled="working === venue.id"
+                  title="Make a whole copy of this venue: model, lights, groups, crowd, haze and views"
+                  @click="duplicate(venue)"
+                >
                   {{ working === venue.id ? 'Copying…' : 'Duplicate' }}
                 </button>
                 <button @click="startRename(venue)">Rename</button>
-                <button v-if="venue.status === 'ready' && venue.modelFormat !== 'glb'" :disabled="working === venue.id" title="Convert this venue's SketchUp file again with the current converter, to pick up what it has learned since (for example SketchUp tags). Lights and groups stay as they are." @click="reconvert(venue)">Re-convert</button>
+                <button
+                  v-if="venue.status === 'ready' && venue.modelFormat !== 'glb'"
+                  :disabled="working === venue.id"
+                  title="Convert this venue's SketchUp file again with the current converter, to pick up what it has learned since (for example SketchUp tags). Lights and groups stay as they are."
+                  @click="reconvert(venue)"
+                >
+                  Re-convert
+                </button>
                 <button title="Upload a new model for this venue (.glb, .gltf or .skp)" @click="chooseModel(venue)">Replace model…</button>
                 <button class="danger" @click="askDelete(venue)">Delete…</button>
-                <input :ref="(el) => (replaceInputs[venue.id] = el as HTMLInputElement | null)" type="file" :accept="MODEL_ACCEPT" hidden @change="onReplaceFile($event, venue)" />
+                <input
+                  :ref="(el) => (replaceInputs[venue.id] = el as HTMLInputElement | null)"
+                  type="file"
+                  :accept="MODEL_ACCEPT"
+                  hidden
+                  @change="onReplaceFile($event, venue)"
+                />
               </span>
             </div>
 
             <div v-if="pending?.id === venue.id" class="confirm" :class="{ danger: pending.kind === 'delete' }">
-              <p v-if="pending.kind === 'delete'">
-                Delete “{{ venue.name }}” with its {{ counts(venue) }}? This cannot be undone.
-              </p>
+              <p v-if="pending.kind === 'delete'">Delete “{{ venue.name }}” with its {{ counts(venue) }}? This cannot be undone.</p>
               <p v-else>
-                Replace the model of “{{ venue.name }}” with “{{ pending.file?.name }}”? The lights, groups and views stay where
-                they are, so check them against the new model afterwards.
+                Replace the model of “{{ venue.name }}” with “{{ pending.file?.name }}”? The lights, groups and views stay where they are, so check them against
+                the new model afterwards.
               </p>
               <div class="buttons">
                 <button class="primary" :class="{ danger: pending.kind === 'delete' }" :disabled="working === venue.id" @click="confirm">
-                  {{ working === venue.id ? (pending.kind === 'delete' ? 'Deleting…' : converts(pending.file) ? 'Converting…' : 'Uploading…') : pending.kind === 'delete' ? 'Delete venue' : 'Replace model' }}
+                  {{
+                    working === venue.id
+                      ? pending.kind === 'delete'
+                        ? 'Deleting…'
+                        : converts(pending.file)
+                          ? 'Converting…'
+                          : 'Uploading…'
+                      : pending.kind === 'delete'
+                        ? 'Delete venue'
+                        : 'Replace model'
+                  }}
                 </button>
                 <button :disabled="working === venue.id" @click="pending = null">Cancel</button>
               </div>

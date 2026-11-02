@@ -218,8 +218,7 @@ export async function uploadModel(id: string, file: File): Promise<Venue> {
 }
 
 /** The version in the URL changes with the file or the converter build, so a cached copy is never stale. */
-export const modelUrl = (venue: Venue) =>
-  `/api/venues/${venue.id}/model.glb?v=${venue.modelHash}-${venue.converterVersion ?? ''}`
+export const modelUrl = (venue: Venue) => `/api/venues/${venue.id}/model.glb?v=${venue.modelHash}-${venue.converterVersion ?? ''}`
 
 // --- tech rider ---------------------------------------------------------------------------------
 
@@ -334,5 +333,7 @@ export async function riderPlanImage(venueId: string): Promise<{ url: string; cr
   return { url: URL.createObjectURL(await res.blob()), crop: crop as [number, number, number, number] }
 }
 
-export const riderDrafts = (venueId: string, body: { similarity: Similarity; overrides?: Record<string, string>; ceilingHeight?: number; standHeight?: number }) =>
-  request<DraftResult>(`/venues/${venueId}/rider/drafts`, { method: 'POST', ...json(body) })
+export const riderDrafts = (
+  venueId: string,
+  body: { similarity: Similarity; overrides?: Record<string, string>; ceilingHeight?: number; standHeight?: number },
+) => request<DraftResult>(`/venues/${venueId}/rider/drafts`, { method: 'POST', ...json(body) })

@@ -134,9 +134,7 @@ export const useSettings = defineStore('settings', () => {
    * saturated colors, which suits stage lighting; "aces" is the usual filmic curve but shifts saturated
    * colors; "off" clips.
    */
-  const toneMapping = ref<ToneMapping>(
-    TONE_MAPPINGS.includes(stored.toneMapping as ToneMapping) ? (stored.toneMapping as ToneMapping) : 'neutral',
-  )
+  const toneMapping = ref<ToneMapping>(TONE_MAPPINGS.includes(stored.toneMapping as ToneMapping) ? (stored.toneMapping as ToneMapping) : 'neutral')
   /** Exposure in stops (EV): 0 is neutral, +1 doubles the brightness. */
   const exposure = ref(clamp(stored.exposure, EXPOSURE_MIN, EXPOSURE_MAX, 0))
   /** Glow around bright lenses, pools and beam cores, 0..1 (0 is off). */
@@ -160,10 +158,23 @@ export const useSettings = defineStore('settings', () => {
 
   watch(
     () => ({
-      fov: fov.value, haze: haze.value, ambient: ambient.value, renderRest: renderRest.value, renderMoving: renderMoving.value,
-      adaptive: adaptive.value, screenshotScale: screenshotScale.value, toneMapping: toneMapping.value, exposure: exposure.value,
-      bloom: bloom.value, showFps: showFps.value, softBeams: softBeams.value, shadows: shadows.value, surfaceLight: surfaceLight.value,
-      hazeWisps: hazeWisps.value, previewStrobe: previewStrobe.value, animate: animate.value,
+      fov: fov.value,
+      haze: haze.value,
+      ambient: ambient.value,
+      renderRest: renderRest.value,
+      renderMoving: renderMoving.value,
+      adaptive: adaptive.value,
+      screenshotScale: screenshotScale.value,
+      toneMapping: toneMapping.value,
+      exposure: exposure.value,
+      bloom: bloom.value,
+      showFps: showFps.value,
+      softBeams: softBeams.value,
+      shadows: shadows.value,
+      surfaceLight: surfaceLight.value,
+      hazeWisps: hazeWisps.value,
+      previewStrobe: previewStrobe.value,
+      animate: animate.value,
     }),
     (all) => {
       try {
@@ -179,6 +190,23 @@ export const useSettings = defineStore('settings', () => {
   }
 
   return {
-    fov, haze, ambient, renderRest, renderMoving, adaptive, screenshotScale, toneMapping, exposure, bloom, showFps, softBeams, shadows, surfaceLight, hazeWisps, previewStrobe, animate, resetFov,
+    fov,
+    haze,
+    ambient,
+    renderRest,
+    renderMoving,
+    adaptive,
+    screenshotScale,
+    toneMapping,
+    exposure,
+    bloom,
+    showFps,
+    softBeams,
+    shadows,
+    surfaceLight,
+    hazeWisps,
+    previewStrobe,
+    animate,
+    resetFov,
   }
 })

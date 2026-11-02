@@ -42,23 +42,108 @@ function cancel() {
     <div class="editbar" @pointerdown.stop>
       <div class="group">
         <button :disabled="!rig.canUndo" :title="rig.canUndo ? `Undo: ${rig.undoLabel} (${mod}Z)` : 'Nothing to undo'" aria-label="Undo" @click="rig.undo()">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5" /><path d="M4 9h10a6 6 0 0 1 0 12h-3" /></svg>
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M9 14 4 9l5-5" />
+            <path d="M4 9h10a6 6 0 0 1 0 12h-3" />
+          </svg>
         </button>
-        <button :disabled="!rig.canRedo" :title="rig.canRedo ? `Redo: ${rig.redoLabel} (Shift+${mod}Z)` : 'Nothing to redo'" aria-label="Redo" @click="rig.redo()">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 14 5-5-5-5" /><path d="M20 9H10a6 6 0 0 0 0 12h3" /></svg>
+        <button
+          :disabled="!rig.canRedo"
+          :title="rig.canRedo ? `Redo: ${rig.redoLabel} (Shift+${mod}Z)` : 'Nothing to redo'"
+          aria-label="Redo"
+          @click="rig.redo()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="m15 14 5-5-5-5" />
+            <path d="M20 9H10a6 6 0 0 0 0 12h3" />
+          </svg>
         </button>
       </div>
       <div class="group tools" role="group" aria-label="Tool for the selected lights">
-        <button :class="{ on: !none && rig.gizmoMode === 'move' && !rig.aim.armed }" :disabled="none" :title="none ? 'Select a light first' : `Move ${what} (G)`" @click="rig.gizmoMode = 'move'">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" /></svg>
+        <button
+          :class="{ on: !none && rig.gizmoMode === 'move' && !rig.aim.armed }"
+          :disabled="none"
+          :title="none ? 'Select a light first' : `Move ${what} (G)`"
+          @click="rig.gizmoMode = 'move'"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3v18M3 12h18M12 3l-3 3M12 3l3 3M12 21l-3-3M12 21l3-3M3 12l3-3M3 12l3 3M21 12l-3-3M21 12l-3 3" />
+          </svg>
           <span class="label">Move</span> <kbd>G</kbd>
         </button>
-        <button :class="{ on: !none && rig.gizmoMode === 'rotate' && !rig.aim.armed }" :disabled="none" :title="none ? 'Select a light first' : `Rotate ${what} (R)`" @click="rig.gizmoMode = 'rotate'">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.6" /><path d="M20 4v5h-5" /></svg>
+        <button
+          :class="{ on: !none && rig.gizmoMode === 'rotate' && !rig.aim.armed }"
+          :disabled="none"
+          :title="none ? 'Select a light first' : `Rotate ${what} (R)`"
+          @click="rig.gizmoMode = 'rotate'"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M20 12a8 8 0 1 1-2.3-5.6" />
+            <path d="M20 4v5h-5" />
+          </svg>
           <span class="label">Rotate</span> <kbd>R</kbd>
         </button>
-        <button :class="{ on: rig.aim.armed }" :disabled="none" :title="none ? 'Select a light first' : `Aim ${what} at a point: click a surface (T)`" @click="rig.toggleAim()">
-          <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8" /><circle cx="12" cy="12" r="3" /><path d="M12 1v4M12 19v4M1 12h4M19 12h4" /></svg>
+        <button
+          :class="{ on: rig.aim.armed }"
+          :disabled="none"
+          :title="none ? 'Select a light first' : `Aim ${what} at a point: click a surface (T)`"
+          @click="rig.toggleAim()"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <circle cx="12" cy="12" r="8" />
+            <circle cx="12" cy="12" r="3" />
+            <path d="M12 1v4M12 19v4M1 12h4M19 12h4" />
+          </svg>
           <span class="label">Aim</span> <kbd>T</kbd>
         </button>
       </div>

@@ -16,6 +16,10 @@ function onKeydown(event: KeyboardEvent) {
 function close() {
   emit('close')
 }
+function run(item: MenuItem) {
+  item.action()
+  emit('close')
+}
 
 onMounted(() => {
   window.addEventListener('keydown', onKeydown)
@@ -33,7 +37,7 @@ onBeforeUnmount(() => {
 <template>
   <ul class="context-menu" :style="{ left: `${x}px`, top: `${y}px` }" @pointerdown.stop @contextmenu.prevent>
     <li v-for="item in items" :key="item.label">
-      <button :class="{ danger: item.danger }" @click="item.action(); emit('close')">{{ item.label }}</button>
+      <button :class="{ danger: item.danger }" @click="run(item)">{{ item.label }}</button>
     </li>
   </ul>
 </template>

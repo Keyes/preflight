@@ -114,7 +114,9 @@ function selectAll(on: boolean) {
 }
 
 /** Groups that will be made: ticked, and with at least one of their lights ticked. */
-const groupCount = computed(() => sourceGroups.value.filter((g) => pickedGroups.value.has(g.id) && membersOf(g).some((id) => pickedFixtures.value.has(id))).length)
+const groupCount = computed(
+  () => sourceGroups.value.filter((g) => pickedGroups.value.has(g.id) && membersOf(g).some((id) => pickedFixtures.value.has(id))).length,
+)
 const lightCount = computed(() => pickedFixtures.value.size)
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
 const zoneCount = computed(() => sourceZones.value.filter((z) => pickedZones.value.has(z.id)).length)
@@ -133,7 +135,14 @@ async function run() {
   const from = source.value
   const to = destination.value
   if (!from || !to || itemCount.value === 0 || busy.value) return
-  const plan = planTransfer(from, pickedFixtures.value, pickedGroups.value, { fixtures: to.fixtures ?? [], groups: to.groups ?? [], zones: to.crowd?.zones ?? [] }, pickedZones.value, offset.value)
+  const plan = planTransfer(
+    from,
+    pickedFixtures.value,
+    pickedGroups.value,
+    { fixtures: to.fixtures ?? [], groups: to.groups ?? [], zones: to.crowd?.zones ?? [] },
+    pickedZones.value,
+    offset.value,
+  )
   if ((to.fixtures?.length ?? 0) + plan.fixtures.length > MAX_LIGHTS) {
     error.value = `${to.name} can hold at most ${MAX_LIGHTS} lights.`
     return
@@ -175,7 +184,16 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="backdrop" @pointerdown.self="transfer.close()">
-    <div ref="root" class="window" role="dialog" aria-modal="true" :aria-label="copying ? 'Copy to another venue' : 'Import from another venue'" tabindex="-1" @keydown.stop="onKeydown" @pointerdown.stop>
+    <div
+      ref="root"
+      class="window"
+      role="dialog"
+      aria-modal="true"
+      :aria-label="copying ? 'Copy to another venue' : 'Import from another venue'"
+      tabindex="-1"
+      @keydown.stop="onKeydown"
+      @pointerdown.stop
+    >
       <header>
         <h2>{{ copying ? 'Copy to another venue' : 'Import from another venue' }}</h2>
         <button class="close" title="Close (Esc)" aria-label="Close" @click="transfer.close()">×</button>
@@ -187,7 +205,13 @@ function onKeydown(event: KeyboardEvent) {
 
       <div v-else-if="done" class="body">
         <p class="success">{{ done.text }}</p>
-        <p class="note">{{ moved ? 'They were moved by the offset you gave.' : 'Lights and zones kept their coordinates. If the two venues are not drawn at the same origin, move them there (lights with the gizmo).' }}</p>
+        <p class="note">
+          {{
+            moved
+              ? 'They were moved by the offset you gave.'
+              : 'Lights and zones kept their coordinates. If the two venues are not drawn at the same origin, move them there (lights with the gizmo).'
+          }}
+        </p>
         <div class="buttons">
           <button class="primary" @click="openDestination">Open that venue</button>
           <button @click="transfer.close()">Done</button>
@@ -269,7 +293,10 @@ function onKeydown(event: KeyboardEvent) {
       </div>
 
       <footer v-if="others.length && !done">
-        <InfoTip text="Lights and zones keep their coordinates unless you move them by an offset (for venues drawn at different origins), and a group comes along with the lights of it that you chose. Names that are taken get a number." label="About copying lights" />
+        <InfoTip
+          text="Lights and zones keep their coordinates unless you move them by an offset (for venues drawn at different origins), and a group comes along with the lights of it that you chose. Names that are taken get a number."
+          label="About copying lights"
+        />
         <button class="primary" :disabled="busy || itemCount === 0" @click="run">
           {{ busy ? 'Copying…' : copying ? `Copy ${summary}` : `Import ${summary}` }}
         </button>

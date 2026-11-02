@@ -180,9 +180,7 @@ export async function listVenues(): Promise<Venue[]> {
   await mkdir(DATA_DIR, { recursive: true })
   const ids = (await readdir(DATA_DIR)).filter(isValidId)
   const venues = await Promise.all(ids.map(getVenue))
-  return venues
-    .filter((v): v is Venue => !!v)
-    .sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0) || a.createdAt.localeCompare(b.createdAt))
+  return venues.filter((v): v is Venue => !!v).sort((a, b) => (a.sortIndex ?? 0) - (b.sortIndex ?? 0) || a.createdAt.localeCompare(b.createdAt))
 }
 
 /** Persists a new list order. Ids not mentioned keep their relative order after the listed ones. */

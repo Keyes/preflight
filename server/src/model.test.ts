@@ -53,7 +53,10 @@ test('rejects other files by their first bytes', () => {
 })
 
 test('accepts a glTF 2.0 document with embedded data', () => {
-  checkGltf(doc({ uri: 'data:application/octet-stream;base64,AAAAAA==', byteLength: 4 }, { images: [{ uri: 'data:image/png;base64,iVBO' }, { bufferView: 1 }] }), false)
+  checkGltf(
+    doc({ uri: 'data:application/octet-stream;base64,AAAAAA==', byteLength: 4 }, { images: [{ uri: 'data:image/png;base64,iVBO' }, { bufferView: 1 }] }),
+    false,
+  )
   checkGltf(doc({ byteLength: 4 }), true) // the GLB's binary chunk
 })
 

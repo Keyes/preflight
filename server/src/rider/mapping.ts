@@ -33,7 +33,11 @@ export const NAME_RULES: NameRule[] = [
   { match: /^DWE/i, profileId: 'generic/dwe-2-light-blinder' },
   { match: /^(Gasse\s?S[RL]|Front\s?[<>]|Arri)/i, profileId: 'arri/junior-650-plus', note: 'The rider lists one fresnel, the ARRI Junior 650.' },
   { match: /^Profil/i, profileId: 'etc/source-four-750-conventional', note: 'The rider names the ETC Source Four but not its lens: 26 degrees assumed.' },
-  { match: /^(Audience\s+(front|back)|Merch)/i, profileId: 'generic/conventional-par', note: 'The rider names no lamp for the conventional PARs: placeholder.' },
+  {
+    match: /^(Audience\s+(front|back)|Merch)/i,
+    profileId: 'generic/conventional-par',
+    note: 'The rider names no lamp for the conventional PARs: placeholder.',
+  },
   { match: /^(Robin|Robe)/i, profileId: 'robe/robin-ledbeam-150' },
   { match: /^Strobe/i, profileId: 'martin/atomic-3000', note: 'The rider names no model for the 2-channel strobes: Atomic 3000 assumed.' },
   { match: /Spiegelkugel|mirror\s?ball/i, ignore: 'a mirror ball motor, not a light' },
@@ -90,7 +94,11 @@ export function findByName(text: string, catalog: readonly CatalogFixture[]): Ca
 }
 
 /** The fixture a patch row is: the user's own choice for it, else the fixture its mode column names, else a rule on its name. */
-export function resolveType(row: Pick<RiderPatchRow, 'fixId' | 'name' | 'typeHint'>, catalog: readonly CatalogFixture[], overrides: Readonly<Record<string, string>> = {}): TypeMatch {
+export function resolveType(
+  row: Pick<RiderPatchRow, 'fixId' | 'name' | 'typeHint'>,
+  catalog: readonly CatalogFixture[],
+  overrides: Readonly<Record<string, string>> = {},
+): TypeMatch {
   const chosen = overrides[row.fixId] ?? overrides[`type:${normalize(row.typeHint ?? '')}`]
   if (chosen && catalog.some((f) => f.id === chosen)) return { profileId: chosen, source: 'override' }
   if (row.typeHint) {
@@ -100,7 +108,8 @@ export function resolveType(row: Pick<RiderPatchRow, 'fixId' | 'name' | 'typeHin
   for (const rule of NAME_RULES) {
     if (!rule.match.test(row.name) && !(row.typeHint && rule.match.test(row.typeHint))) continue
     if (rule.ignore) return { source: 'name rule', ignore: rule.ignore }
-    if (rule.profileId && catalog.some((f) => f.id === rule.profileId)) return { profileId: rule.profileId, source: 'name rule', ...(rule.note ? { note: rule.note } : {}) }
+    if (rule.profileId && catalog.some((f) => f.id === rule.profileId))
+      return { profileId: rule.profileId, source: 'name rule', ...(rule.note ? { note: rule.note } : {}) }
   }
   return { source: 'none', ...(row.typeHint ? { note: `"${row.typeHint}" is not in the fixture catalog (add it to server/catalog/custom.json)` } : {}) }
 }

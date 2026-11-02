@@ -80,8 +80,20 @@ export const GENERIC_CATALOG_ENTRY: CatalogFixture = {
 }
 
 export const COLOR_FEATURES = new Set([
-  'red', 'green', 'blue', 'white', 'amber', 'uv', 'cyan', 'magenta', 'yellow', 'lime', 'indigo',
-  'color', 'color-wheel', 'color-temperature',
+  'red',
+  'green',
+  'blue',
+  'white',
+  'amber',
+  'uv',
+  'cyan',
+  'magenta',
+  'yellow',
+  'lime',
+  'indigo',
+  'color',
+  'color-wheel',
+  'color-temperature',
 ])
 
 /** Categories of fixtures that do not light anything. */
@@ -144,8 +156,7 @@ export function profileFor(id: string): FixtureProfile {
 /** Pan or tilt in degrees from a normalized value, centered on 0 at the home position. */
 export const travelDegrees = (value: number, range: number) => (value - 0.5) * range
 
-export const beamAngleDegrees = (profile: FixtureProfile, zoom: number) =>
-  profile.beamAngle[0] + (profile.beamAngle[1] - profile.beamAngle[0]) * zoom
+export const beamAngleDegrees = (profile: FixtureProfile, zoom: number) => profile.beamAngle[0] + (profile.beamAngle[1] - profile.beamAngle[0]) * zoom
 
 /** Flashes per second at the slowest and the fastest strobe setting. */
 export const STROBE_MIN_HZ = 1

@@ -180,7 +180,11 @@ export function buildModel(ctx: ModelContext, spec: ModelSpec): BuiltModel {
     box('housing', W, H, D, ctx.tilt, 0, 0, 0)
     const strip = lensStrip(spec)
     if (spec.kind === 'panel' || spec.kind === 'bar') {
-      lens = lensPlate(strip!.radius * 2 + (strip!.axis === 'x' ? strip!.halfLength * 2 : 0), strip!.radius * 2 + (strip!.axis === 'z' ? strip!.halfLength * 2 : 0), H / 2 + 0.003)
+      lens = lensPlate(
+        strip!.radius * 2 + (strip!.axis === 'x' ? strip!.halfLength * 2 : 0),
+        strip!.radius * 2 + (strip!.axis === 'z' ? strip!.halfLength * 2 : 0),
+        H / 2 + 0.003,
+      )
     } else {
       lens = lensDisc(Math.min(W, D) * 0.5, H / 2 + 0.003)
     }
@@ -195,4 +199,3 @@ export function buildModel(ctx: ModelContext, spec: ModelSpec): BuiltModel {
   }
   return { layout, body, lens }
 }
-
