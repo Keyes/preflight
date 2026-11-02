@@ -20,11 +20,11 @@ What a hosted version has to change, by file:
 
 | Area | Today | Why it matters for hosting |
 |---|---|---|
-| Server entry (`server/src/index.ts`) | A plain `node:http` server; `server.listen(PORT)` binds every interface. No login, no sessions, no CORS headers. `readJson` does not check the content type. | Anyone who can reach the port can read, change and delete every venue. A web page can send a `text/plain` POST to it (a "simple" request, no CORS preflight), and a DNS-rebinding page can read it. Also a concern for self-hosting. |
-| Venues (`server/src/venues.ts`) | One folder per venue in `server/data/venues/<id>/`: `venue.json` (name, order, fixtures, groups, views, crowd, atmosphere), `model.skp`, `model.glb`, and for riders `rider.pdf` and `rider.json`. Venue ids are UUIDs. `sortIndex` is global. `listVenues` reads the whole folder. `updateVenue` is read-modify-write with no lock. | No owner on a venue; one global order; last write wins (`PUT /fixtures` replaces the whole list, so two tabs or two people silently overwrite each other). |
+| Server entry (`server/src/index.ts`) | A plain `node:http` server; `server.listen(PORT)` binds every interface. No login, no sessions, no CORS headers. `readBody` does not check the content type. | Anyone who can reach the port can read, change and delete every venue. A web page can send a `text/plain` POST to it (a "simple" request, no CORS preflight), and a DNS-rebinding page can read it. Also a concern for self-hosting. |
+| Venues (`server/src/services/venues.ts`) | One folder per venue in `server/data/venues/<id>/`: `venue.json` (name, order, fixtures, groups, views, crowd, atmosphere), `model.skp`, `model.glb`, and for riders `rider.pdf` and `rider.json`. Venue ids are UUIDs. `sortIndex` is global. `listVenues` reads the whole folder. `updateVenue` is read-modify-write with no lock. | No owner on a venue; one global order; last write wins (`PUT /fixtures` replaces the whole list, so two tabs or two people silently overwrite each other). |
 | Sizes | The sample venue: `.skp` 10 MB, `.glb` 10.8 MB, rider PDF 3.4 MB, `venue.json` 72 KB. | About 25 MB per venue with a model and a rider. |
 | Uploads | `.skp` up to 500 MB (`MAX_UPLOAD`), checked by magic bytes and hashed while streaming. Rider PDFs up to 40 MB. | 500 MB is fine on your own machine, too much for a free hosted account. |
-| Converter (`server/src/convert.ts`) | `execFile` of `converter/build/skp2glb` inside the upload request, timeout 120 s. The converter "version" is the binary's size and modification time. | Native code parsing untrusted files, in the API process's user, during an HTTP request. The version scheme only works with one binary on one machine. |
+| Converter (`server/src/services/convert.ts`) | `execFile` of `converter/build/skp2glb` inside the upload request, timeout 120 s. The converter "version" is the binary's size and modification time. | Native code parsing untrusted files, in the API process's user, during an HTTP request. The version scheme only works with one binary on one machine. |
 | GLB download | Streamed from disk with `cache-control: immutable`; the URL carries `modelHash` and `converterVersion`. | Good for a CDN or presigned URLs: the URL is already content-addressed. |
 | Rider (`server/src/rider/`) | The PDF's patch table is read from its text (no AI). The plan is read by a vision model: the page is rendered at 300 dpi with pdf.js and `@napi-rs/canvas`, then 1 layout request plus 3 band requests, plus up to 3 more for lights the patch has and the plan did not show: **4-7 image requests per plan**. The rendered crop is cached in a process-wide `Map`. | Rendering untrusted PDFs at 300 dpi is CPU- and memory-heavy (an A0 page at 300 dpi is about 140 megapixels, over 500 MB as RGBA). The cache is per process. |
 | API key | The client keeps the key in `localStorage` (`preflight.visionKey`) and sends it in the body of every `POST /rider/plan`. The server uses it for that request only, or falls back to `ANTHROPIC_API_KEY` from the environment. The client can also pick the `model`. | On a hosted server the fallback would make the operator pay for every user, on any model the client names. |
@@ -38,9 +38,9 @@ What a hosted version has to change, by file:
 
 - **Sign-in:** email magic links plus "Sign in with Google / GitHub" (OAuth/OIDC). No passwords to store, and lighting people mostly have one of those accounts. A maintained auth library or a small hand-written OIDC flow both work; the session itself should live in Postgres, not in a third-party service, so the same code serves self-hosters.
 - **Sessions:** an opaque session id in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie, looked up in a `sessions` table. Cookies keep the client's plain `fetch('/api/...')` calls unchanged.
-- **CSRF:** reject state-changing requests whose `Origin` is not the app's own, and require `content-type: application/json` on JSON endpoints (today `readJson` accepts anything). The raw-body upload endpoints check `Origin` too.
+- **CSRF:** reject state-changing requests whose `Origin` is not the app's own, and require `content-type: application/json` on JSON endpoints (today `readBody` accepts anything). The raw-body upload endpoints check `Origin` too.
 - **WebSocket:** the same cookie is checked on upgrade, plus the `Origin` header.
-- **Authorization:** every venue route resolves the venue *and* checks that the session's user may read or write it. One helper (`requireVenue(req, id, 'read' | 'write')`) replaces the bare `getVenue(id)` calls in `index.ts` and `rider/api.ts`, so a forgotten check is easy to grep for.
+- **Authorization:** every venue route resolves the venue *and* checks that the session's user may read or write it. Every venue route already finds its venue through one helper, `venueOf(id)` in `server/src/routes/venues.ts`; it grows into `requireVenue(req, id, 'read' | 'write')`, so a forgotten check is easy to grep for.
 
 ### Self-hosted
 
@@ -58,7 +58,7 @@ The hosted version is `AUTH=oidc` plus magic links and sign-up, so it is the sam
 
 ### Data model
 
-Keep the venue as one document, as it is now. The client already sends whole lists (`PUT /fixtures` with fixtures and groups, `PUT /views`), the server validates them as a whole (`cleanFixtures`, `cleanGroups`, `cleanCrowd`), and the document is small (72 KB for the sample venue, capped at 1 MB by `readJson`). Splitting fixtures into rows would mean rewriting the API and the client stores for no gain at this size.
+Keep the venue as one document, as it is now. The client already sends whole lists (`PUT /fixtures` with fixtures and groups, `PUT /views`), the server validates them as a whole (against the schemas in `shared/requests.ts`), and the document is small (72 KB for the sample venue, capped at 1 MB by `readBody`). Splitting fixtures into rows would mean rewriting the API and the client stores for no gain at this size.
 
 Postgres tables (sketch):
 

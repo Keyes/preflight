@@ -1,6 +1,6 @@
 # Architecture
 
-Status: describes the code as of November 2026. [Direction](#direction) is a plan; of its steps, the first two (`shared/`, and one click mode and keymap) are built. Update this file when a change moves a boundary between the parts below, so it stays a map you can trust.
+Status: describes the code as of November 2026. [Direction](#direction) is a plan; of its steps, the first three (`shared/`, one click mode and keymap, the server split) are built. Update this file when a change moves a boundary between the parts below, so it stays a map you can trust.
 
 pre(f)light is two programs: a browser client that draws the venue and lets you place and edit lights, and a small Node server that stores venues, converts models and reads tech riders. They talk over a JSON API under `/api`; in development Vite passes `/api` and `/ws` on to the server (`client/vite.config.ts`). The shape of what they exchange, and the maths both apply to it, are in a third package, `shared/`.
 
@@ -17,12 +17,11 @@ flowchart TB
     Api["api.ts<br/>one function per endpoint"]
   end
   subgraph server["server/ (Node)"]
-    Index["index.ts<br/>routes, checks, uploads"]
-    RiderApi["rider/api.ts<br/>rider routes"]
+    Index["index.ts<br/>origin check, route table"]
+    Routes["routes/<br/>venues, models, rider, catalog"]
+    Http["http.ts, upload.ts, router.ts<br/>bodies, uploads, routing"]
+    Services["services/<br/>venue storage, model upload,<br/>glTF checks, catalog, demo"]
     Pipeline["rider/<br/>patch, vision, placement, mapping, draft"]
-    Venues["venues.ts<br/>venue folders on disk"]
-    Model["model.ts, convert.ts<br/>glTF checks, skp2glb"]
-    Catalog["catalog.ts<br/>fixture catalog"]
   end
   App --> UI & Viewer & Input
   UI & Viewer --> Input
@@ -34,17 +33,17 @@ flowchart TB
   Stores --> Api
   Scene --> Domain
   Api -- "HTTP /api" --> Index
-  Index --> RiderApi --> Pipeline
-  Index --> Venues & Model & Catalog
-  Pipeline --> Catalog
+  Index --> Routes
+  Routes --> Http & Services & Pipeline
+  Pipeline --> Services
   Pipeline --> Vision["vision model<br/>(VisionProvider)"]
-  Model --> Converter["converter/skp2glb<br/>(SketchUp SDK)"]
-  client & server --> Shared["shared/ (@preflight/shared)<br/>types, plan-to-venue maths"]
+  Services --> Converter["converter/skp2glb<br/>(SketchUp SDK)"]
+  client & server --> Shared["shared/ (@preflight/shared)<br/>types and request schemas,<br/>plan-to-venue maths"]
   classDef hotspot stroke:#d85a30,stroke-width:2px
-  class Viewer,Api,Index hotspot
+  class Viewer hotspot
 ```
 
-Arrows point from the code that imports to the code it uses. The three outlined boxes are where most of the [known problems](#known-problems) are.
+Arrows point from the code that imports to the code it uses. The outlined box is where most of the [known problems](#known-problems) are.
 
 ## The client
 
@@ -65,14 +64,13 @@ The `venues` store is the hub: it holds every venue record, and the `rig`, `crow
 
 | Module | What it does |
 |---|---|
-| `index.ts` | The HTTP server: refuses requests from other sites (`origin.ts`), routes by matching the path, checks request bodies (the `clean…` functions), receives and converts models, and opens the WebSocket (reserved for live DMX). |
-| `http.ts` | `HttpError`, `readJson`, `sendJson`. |
-| `origin.ts` | Which hosts and origins may talk to the server (there is no login). |
-| `venues.ts` | Venue storage: one folder per venue, writes to a venue queued one after another and replaced in one step. |
-| `model.ts`, `convert.ts` | Checks glTF uploads and packs a `.gltf` into a `.glb`; runs the native `skp2glb` converter. |
-| `catalog.ts` | Loads the fixture catalog (the Open Fixture Library snapshot plus `custom.json`). |
-| `demo.ts` | Makes the demo club venue from `samples/`. |
-| `rider/` | The tech rider import. `api.ts` has the routes. `patch.ts` reads the patch table from the PDF's text, `vision/` reads the plan page with a vision model behind the `VisionProvider` interface, `placement.ts` works out where and how a light drawn on the plan hangs, `mapping.ts` matches rider names to catalog fixtures, and `draft.ts` turns all of it into proposed lights. |
+| `index.ts` | The entry: refuses requests from other sites (`origin.ts`), hands the rest to the route table, turns an `HttpError` into its status and message, and opens the WebSocket (reserved for live DMX). |
+| `router.ts` | The route table: `{ method, path, handler }` entries with `:name` parts in the path; 404 for an unknown path, 405 for a method a path does not take. |
+| `http.ts` | `HttpError`, `sendJson`, and `readBody`, which checks a JSON body against its schema from `shared/` and answers 400 with what does not fit and where. |
+| `upload.ts` | `receiveFile`: streams a raw upload to disk, hashing it and checking its size and first bytes as it arrives. Models and rider PDFs both use it. |
+| `routes/` | One file per area, each a list of routes: `venues.ts` (the venue and what is saved with it), `models.ts` (upload, convert again, fetch the GLB), `rider.ts` (the tech rider import), `catalog.ts`. A handler finds the venue (`venueOf`, a 404 when there is none), reads its body, calls a service and sends the answer. |
+| `services/` | What the routes do, with no HTTP in it. `venues.ts` is venue storage: one folder per venue, writes to a venue queued one after another and replaced in one step. `modelUpload.ts` puts an uploaded model in place in its three cases (glTF, a first SketchUp file, a replacement) and converts a stored one again. `model.ts` checks glTF and packs a `.gltf` into a `.glb`, `convert.ts` runs the native `skp2glb` converter, `catalog.ts` loads the fixture catalog (the Open Fixture Library snapshot plus `custom.json`), and `demo.ts` makes the demo club from `samples/`. |
+| `rider/` | The tech rider pipeline. `patch.ts` reads the patch table from the PDF's text, `vision/` reads the plan page with a vision model behind the `VisionProvider` interface, `placement.ts` works out where and how a light drawn on the plan hangs, `mapping.ts` matches rider names to catalog fixtures, and `draft.ts` turns all of it into proposed lights. |
 | `tools/` | Command-line scripts (`npm run import-fixtures`, `demo-venue`, `read-rider` and others) that reuse the modules above. |
 
 Each venue is a folder `server/data/venues/<id>/` with `venue.json` (everything but the files), `model.glb`, `model.skp` for SketchUp uploads, and `rider.pdf` and `rider.json` once a rider is imported. New files are written next to the old ones and renamed over them only when they are complete, so a failed upload or conversion leaves the venue as it was.
@@ -83,12 +81,13 @@ Each venue is a folder `server/data/venues/<id>/` with `venue.json` (everything 
 
 | Module | What it holds |
 |---|---|
-| `venue.ts` | A venue and what it contains: lights (`Fixture`) and their patch, groups, saved views, haze and room light, the crowd. |
+| `venue.ts` | A venue and what it contains: lights (`Fixture`) and their patch, groups, saved views, haze and room light, the crowd. What the client sends is a zod schema, and its type is inferred from it; `Venue` itself, which only the server makes, is an interface. |
+| `requests.ts` | The body of every JSON request, by route, as a schema; and `check`, which returns a value as its schema makes it (names trimmed, rotations at length 1) or what is wrong with it and where. |
 | `catalog.ts` | The fixture catalog as the server sends it. |
-| `rider.ts` | The rider file, and the drafts of lights the server makes from it. |
+| `rider.ts` | The rider file (with a schema that checks the parts the import reads), and the drafts of lights the server makes from it. |
 | `similarity.ts` | The map from plan pixels to venue meters: the client works it out from the two calibration points, the server places the lights with it. |
 
-It is plain TypeScript with no build step: its `package.json` points at `src/index.ts`, which Vite, `tsx` and both type checkers read directly. Nothing in it may import Node, the DOM, Vue or Babylon, so it runs the same on both sides. Its tests run on `node:test`, like the server's.
+It is plain TypeScript with no build step: its `package.json` points at `src/index.ts`, which Vite, `tsx` and both type checkers read directly. Its one dependency is [zod](https://zod.dev); nothing in it may import Node, the DOM, Vue or Babylon, so it runs the same on both sides. It is marked free of side effects, so the client's build leaves out the schemas it does not use (today all of them: the client imports types and the calibration maths). Its tests run on `node:test`, like the server's.
 
 ## How a change travels
 
@@ -97,7 +96,7 @@ Changing a light's dimmer in the inspector:
 1. The inspector calls `rig.setValue(id, 'dimmer', 0.8)`.
 2. `rig` calls `touch()`, which records an undo step at the end of the current tick, then changes the fixture inside `venues.current.fixtures` and schedules a save.
 3. 400 ms after the last change, `rig` sends every light and group of the venue with `PUT /api/venues/<id>/fixtures`.
-4. The server checks every field (`cleanFixtures`, `cleanGroups`) and `updateVenue` writes `venue.json`.
+4. The route in `routes/venues.ts` reads the body with `readBody(req, fixturesBody)`, which checks every field against the schemas in `shared/` and returns them tidied; it drops group members that are not among the lights, and `updateVenue` writes `venue.json`.
 5. Meanwhile a watcher in `Viewer.vue` sees the fixtures change and calls `fixtureRig.sync(fixtures, haze)`, which creates, updates or removes Babylon nodes to match.
 
 The other direction: a click in the view goes to `Viewer.vue`'s pointer handler, which reads `interaction.mode`, the one value that says what the next click does (place a light, aim, a crowd zone corner or facing point, a rider calibration point). It passes the point to the store that started that mode (`rig.placeAt`, `rig.aimAt`, `crowd.finishZone`, `rider.deliverWorld`…), which ends it; with no mode on, the click selects. A finished gizmo drag calls `rig.update()` with the new position or rotation. A key press goes to the one listener in `input/shortcuts.ts`, which looks it up in `input/keymap.ts` and calls the store action.
@@ -112,7 +111,8 @@ The rider import runs across both programs: the server reads the patch table fro
 - **One value for what a click does.** A new kind of click is a new case of `ClickMode` in `stores/interaction.ts`: the store that starts it also finishes it, the viewer's pointer handler gets one more `case`, and the edit bar's hint one more line. Starting a mode ends the one before, and Esc or opening another venue ends it, so two can never be on at once.
 - **Keys live in the keymap.** A new app-wide shortcut is an entry in `input/keymap.ts` (keys, help text, group) and a handler in `input/shortcuts.ts`; the help panel, the empty inspector and button titles pick it up. A test fails if two shortcuts, or a shortcut and the camera, share a key. Only keys that mean something inside one window or field stay with it, and that window stops them from reaching the app.
 - **Pipelines of plain functions.** The server's rider import is a chain of small stages with data in and data out, and the vision model is an interface with one implementation per vendor. Most of the server's tests are here, because this shape makes testing easy.
-- **Check data where it enters.** The server checks every request body for type, range and size before it is stored, and refuses requests from other sites.
+- **Check data where it enters.** Every JSON body goes through `readBody` and its schema in `shared/requests.ts` before a route uses it, and every upload through `receiveFile` as it streams in. Requests from other sites are refused before routing.
+- **Routes are tables, services do the work.** A file in `server/src/routes/` is a list of `{ method, path, handler }`; a handler finds the venue, reads its body, calls a service in `services/` and sends the answer. A new endpoint is a new entry, and its body a new schema in `shared/requests.ts`.
 - **Replace files in one step.** Uploads and conversions are written next to the old file and renamed over it only when they worked.
 
 ## Known problems
@@ -121,13 +121,12 @@ In order of how much they get in the way.
 
 1. **`Viewer.vue` does too much.** About 1,400 lines of script and 30 watchers cover engine setup, the camera and remembered positions, model loading and hidden tags, picking, gizmos and moving several lights at once, rotation snapping, the aim cursor, the rider plan view (including the triangle analysis that hides clutter), rider markers, crowd zone drawing, post-processing and screenshots. A change to any of these means reading all of it.
 2. **The stores and the viewer talk in three different ways**, besides state the viewer watches (such as the click mode). The camera store holds an interface the viewer registers (`camera.api`); the viewer puts a function into the rider store (`rider.ceilingAt`); and the rig store bumps a counter the viewer watches (`rig.aim.tick`), after which the viewer solves the aim and calls `rig.applyAim()`. Each works, but a reader has to learn all three.
-3. **The server's `index.ts` does three jobs.** It routes requests, holds about 130 lines of body checks that can only be tested from outside, over HTTP (`index.test.ts`), and runs the model upload with its three cases (glTF, a new SketchUp file, a replacement SketchUp file). The rider routes have already moved to `rider/api.ts`. `receiveModel` here and `receivePdf` in `rider/api.ts` repeat the same streaming size and format check. `readJson` returns `any`, which is why the checks read `raw.x` without the compiler's help. The types of what is sent are shared now, but nothing checks at run time that a body has that shape: schemas in `shared/` could do it for both sides.
-4. **A few imports cross layers the wrong way.**
+3. **A few imports cross layers the wrong way.**
    - `fixtures/profiles.ts` imports `modelFor` and `lensStrip` from `scene/fixtureModel.ts`, a module that imports Babylon, so the domain layer depends on the scene layer.
    - `profiles.ts` keeps the catalog in a module-level map and makes callers reactive with `void profilesVersion.value`; the `catalog` store would be the natural owner.
    - `FixtureInspector.vue` and `SettingsPanel.vue` import light limits (`MAX_SHADOW_LIGHTS`, `MAX_GOBO_LIGHTS`) from `scene/FixtureRig.ts`.
    - `scene/aim.ts` mixes the pan and tilt maths with lookups on a `FixtureRig`, so the maths cannot be tested without a scene.
-5. **Saving works three slightly different ways.** Lights are saved 400 ms after the last change, haze and crowd 500 ms after it, each with its own timer. Saved views and hidden tags go back to the old value when saving fails; lights, haze and crowd keep the new value and show an error.
+4. **Saving works three slightly different ways.** Lights are saved 400 ms after the last change, haze and crowd 500 ms after it, each with its own timer. Saved views and hidden tags go back to the old value when saving fails; lights, haze and crowd keep the new value and show an error.
 
 The client's tests cover its plain logic (undo, profiles, crowd, venue check, aiming, the keymap; plan calibration is tested in `shared/`) and the click mode across the `rig`, `crowd` and `rider` stores, but no component, and the browser test only checks that the demo club renders. Before the refactors in [Direction](#direction) move code, each needs tests around what it moves.
 
@@ -136,7 +135,7 @@ The client's tests cover its plain logic (undo, profiles, crowd, venue check, ai
 Where the code should go, so that each problem above has a home:
 
 ```
-shared/            types and plan-to-venue maths (done); request schemas next, with the server split
+shared/            types, request schemas and plan-to-venue maths (done)
 client/src/
   domain/          profiles, crowd model, venue check, fixture history: no Vue, no Babylon, unit-tested
   scene/           one controller per job (camera, model, gizmos, rider plan, crowd zones), each with attach and dispose
@@ -144,16 +143,16 @@ client/src/
   input/           one keymap that the handlers and the help panel both read (done)
   components/      Viewer.vue only wires stores to scene controllers
 server/src/
-  routes/          venues.ts, rider.ts
-  services/        venue storage, model upload and conversion, catalog
+  routes/          venues.ts, models.ts, rider.ts, catalog.ts (done)
+  services/        venue storage, model upload and conversion, catalog (done)
   rider/           the pipeline, unchanged
 ```
 
-Dependencies point down only: components → stores → domain and `shared/`; the viewer → scene → domain and `shared/`; server routes → services → `shared/`. Once linting is set up, a tool such as dependency-cruiser can check this in CI.
+Dependencies point down only: components → stores → domain and `shared/`; the viewer → scene → domain and `shared/`; server routes → services → `shared/`. A tool such as dependency-cruiser could check this in CI.
 
 Suggested order, smallest risk first:
 
 1. **`shared/` workspace** for the types and the plan-to-venue maths. Done: the client and the server no longer keep copies that drift apart.
 2. **One interaction mode and one keymap.** Done: what the next click does is one value in `stores/interaction.ts`, and every app-wide key is in `input/keymap.ts`.
-3. **Split the server's routes, checks and upload handling.** The checks become schemas in `shared/` on the way, so the client can use them too.
+3. **Split the server's routes, checks and upload handling.** Done: routes are tables in `routes/`, the work is in `services/`, request bodies are checked against schemas in `shared/`, and one streaming check takes models and PDFs.
 4. **Split `Viewer.vue` into scene controllers.** The largest change; the browser smoke test (`e2e/smoke.spec.ts`) has to keep passing at every step, and should grow with the interactions each step moves.
