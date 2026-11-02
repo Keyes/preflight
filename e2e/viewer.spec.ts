@@ -35,6 +35,12 @@ test('the camera starts at saved view 1, and the view buttons and number keys mo
   await expect.poll(async () => rounded(await cameraPosition(page))).toEqual([0, 2.8, -6.6])
   await page.getByRole('button', { name: 'Inside' }).click()
   await expect.poll(async () => rounded(await cameraPosition(page))[1]).toBe(1.7) // eye height over the floor
+  // the venue opens again where the camera was left
+  await cameraAtRest(page)
+  const left = rounded(await cameraPosition(page))
+  await page.waitForTimeout(700) // the pose is written half a second after the camera stops
+  await page.reload()
+  await expect.poll(async () => rounded(await cameraPosition(page))).toEqual(left)
 })
 
 test('a light selected in the list gets the gizmo, G and R switch it between moving and turning, and several share one', async ({ page }) => {

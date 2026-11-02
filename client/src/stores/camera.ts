@@ -1,10 +1,6 @@
 import { shallowRef } from 'vue'
 import { defineStore } from 'pinia'
-
-export interface CameraState {
-  position: [number, number, number]
-  rotation: [number, number, number]
-}
+import type { CameraState } from '../scene/ViewerCamera'
 
 /** What the 3D viewer offers to the rest of the UI. Registered by Viewer.vue while mounted. */
 export interface ViewerApi {

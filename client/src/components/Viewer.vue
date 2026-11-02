@@ -15,7 +15,6 @@ import {
   Mesh,
   MeshBuilder,
   Plane,
-  Observer,
   PBRMaterial,
   PointerEventTypes,
   PositionGizmo,
@@ -42,9 +41,10 @@ import { clutterCut, triangleIndices } from '../scene/planClutter'
 import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
 import { QualityGovernor } from '../scene/quality'
 import { SelectionGizmo } from '../scene/SelectionGizmo'
+import { insidePose, overviewPose, ViewerCamera, type CameraState } from '../scene/ViewerCamera'
 import { captureCanvas, planShot, SHOT_ASPECT } from '../scene/screenshot'
 import { ZoneOutlines } from '../scene/ZoneOutlines'
-import { useCameraBridge, type CameraState } from '../stores/camera'
+import { useCameraBridge } from '../stores/camera'
 import { crowdAbsorbers } from '../crowdModel'
 import { useCrowd } from '../stores/crowd'
 import { useInteraction } from '../stores/interaction'
@@ -61,9 +61,6 @@ const emit = defineEmits<{ (e: 'loading', value: boolean): void; (e: 'error', me
 /** Anisotropic filtering level for venue textures (the GPU's own limit applies if it is lower). */
 const MAX_ANISOTROPY = 16
 
-const EYE_HEIGHT = 1.7
-const WALK_SPEED = 0.12
-const FAST_FACTOR = 4
 /** Without clustering, venue surfaces accept this many lights at once (Babylon's default of 4 is far too few for a rig). */
 const MAX_LIGHTS = 32
 /** With clustered lighting a surface sees the ambient light, the clustered container and the few lights that cast shadows or project a gobo. */
@@ -81,13 +78,13 @@ const interaction = useInteraction()
 const canvas = ref<HTMLCanvasElement>()
 let engine: Engine | undefined
 let scene: Scene | undefined
+let walkCamera: ViewerCamera | undefined
+/** walkCamera's Babylon camera, which the post-processing, the depth pass and picking use */
 let camera: UniversalCamera | undefined
 let ambient: HemisphericLight | undefined
 let venue: AssetContainer | undefined
 let bounds: { min: Vector3; max: Vector3 } | undefined
 let loadToken = 0
-let tween: Observer<Scene> | null = null
-let fast = false
 let fixtureRig: FixtureRig | undefined
 let crowdScene: CrowdScene | undefined
 let aimCursor: AimCursor | undefined
@@ -97,125 +94,14 @@ let quality: QualityGovernor | undefined
 let pipeline: DefaultRenderingPipeline | undefined
 let depthRenderer: DepthRenderer | undefined
 let statsTimer: ReturnType<typeof setInterval> | undefined
-/** id of the venue whose model is currently on screen (what a saved camera pose belongs to) */
-let shownVenueId: string | null = null
-let poseTimer: ReturnType<typeof setTimeout> | undefined
-let lastPoseKey = ''
 
-// --- camera helpers --------------------------------------------------------
-
-/** Babylon rotation (pitch down is positive x, yaw around y) for looking from `from` at `to`. */
-function lookRotation(from: Vector3, to: Vector3): Vector3 {
-  const d = to.subtract(from)
-  return new Vector3(Math.atan2(-d.y, Math.hypot(d.x, d.z)), Math.atan2(d.x, d.z), 0)
-}
-
-function getState(): CameraState {
-  const c = camera!
-  return { position: c.position.asArray(), rotation: c.rotation.asArray() }
-}
-
-function stopTween() {
-  if (tween && scene) scene.onBeforeRenderObservable.remove(tween)
-  tween = null
-}
-
-const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
-
-function goTo(state: CameraState, animate = true) {
-  if (!camera || !scene) return
-  stopTween()
-  const toPos = Vector3.FromArray(state.position)
-  const toRot = Vector3.FromArray(state.rotation)
-  if (!animate) {
-    camera.position.copyFrom(toPos)
-    camera.rotation.copyFrom(toRot)
-    return
-  }
-  const fromPos = camera.position.clone()
-  const fromRot = camera.rotation.clone()
-  // Turn the short way around.
-  const dYaw = Math.atan2(Math.sin(toRot.y - fromRot.y), Math.cos(toRot.y - fromRot.y))
-  const duration = 700
-  const start = performance.now()
-  tween = scene.onBeforeRenderObservable.add(() => {
-    const t = Math.min(1, (performance.now() - start) / duration)
-    const k = easeInOut(t)
-    camera!.position.copyFrom(Vector3.Lerp(fromPos, toPos, k))
-    camera!.rotation.set(fromRot.x + (toRot.x - fromRot.x) * k, fromRot.y + dYaw * k, 0)
-    if (t >= 1) stopTween()
-  })
-}
-
-function overviewState(): CameraState | undefined {
-  if (!bounds) return
-  const center = bounds.min.add(bounds.max).scale(0.5)
-  const position = new Vector3(center.x, bounds.max.y + 8, bounds.min.z - 14)
-  return { position: position.asArray(), rotation: lookRotation(position, center).asArray() }
-}
-
-/** Eye height above the floor in the middle of the venue; the floor is found with a ray cast down from mid-height. */
-function insideState(): CameraState | undefined {
-  if (!bounds || !scene || !venue) return
+/** The floor under the middle of the venue: a ray cast down from mid-height, else the bottom of the model. */
+function floorUnderMiddle(): number {
+  if (!bounds || !scene || !venue) return 0
   const center = bounds.min.add(bounds.max).scale(0.5)
   const meshes = new Set(venue.meshes)
   const hit = scene.pickWithRay(new Ray(center, Vector3.Down(), bounds.max.y - bounds.min.y), (m) => meshes.has(m))
-  const floorY = hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : bounds.min.y
-  const position = new Vector3(center.x, floorY + EYE_HEIGHT, center.z)
-  return { position: position.asArray(), rotation: [0, 0, 0] }
-}
-
-// --- venue loading ---------------------------------------------------------
-
-// --- remembering where the camera was -----------------------------------------
-
-const poseKey = (venueId: string) => `preflight.camera.${venueId}`
-
-function loadPose(venueId: string): CameraState | undefined {
-  try {
-    const raw = JSON.parse(localStorage.getItem(poseKey(venueId)) ?? 'null') as { position?: unknown; rotation?: unknown } | null
-    const ok = (v: unknown): v is [number, number, number] => Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n))
-    if (raw && ok(raw.position) && ok(raw.rotation)) return { position: raw.position, rotation: raw.rotation }
-  } catch {
-    /* unreadable or unavailable storage: start from the default view */
-  }
-  return undefined
-}
-
-function savePose(venueId: string, state: CameraState) {
-  try {
-    localStorage.setItem(poseKey(venueId), JSON.stringify(state))
-  } catch {
-    /* storage unavailable: the pose just won't be remembered */
-  }
-}
-
-/** Writes a pending camera pose now (page closing, viewer going away). */
-function flushPose() {
-  if (!camera || !shownVenueId || !poseTimer) return
-  clearTimeout(poseTimer)
-  poseTimer = undefined
-  savePose(shownVenueId, getState())
-}
-
-/** Saves the camera pose shortly after it stops changing, under the venue that is on screen. */
-function trackPose() {
-  if (!camera || !shownVenueId || planView) return // the plan view is temporary: it is not where the camera should start next time
-  const state = getState()
-  const key = [...state.position, ...state.rotation].map((n) => n.toFixed(3)).join(',')
-  if (key === lastPoseKey) return
-  lastPoseKey = key
-  const id = shownVenueId
-  clearTimeout(poseTimer)
-  poseTimer = setTimeout(() => savePose(id, state), 500)
-}
-
-/** Where the camera starts for a venue: where it was last time, else saved view 1, else the overview. */
-function startState(venueId: string | null): CameraState | undefined {
-  const remembered = venueId ? loadPose(venueId) : undefined
-  if (remembered) return remembered
-  const first = venues.venues.find((v) => v.id === venueId)?.views?.[0]
-  return first ? { position: first.position, rotation: first.rotation } : overviewState()
+  return hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : bounds.min.y
 }
 
 function clearVenue() {
@@ -228,7 +114,7 @@ function clearVenue() {
   venueBox.tags = []
   venueBox.tagsFromNodes = false
   parts = new Map()
-  shownVenueId = null
+  walkCamera?.leaveVenue()
 }
 
 const TAG_PREFIX = 'tag:'
@@ -273,9 +159,9 @@ function applyTags() {
 }
 
 async function showModel(url?: string) {
-  if (!scene || !camera) return
+  if (!scene || !walkCamera) return
   const token = ++loadToken
-  stopTween()
+  walkCamera.stopJump()
   clearVenue()
   if (!url) return
 
@@ -316,10 +202,9 @@ async function showModel(url?: string) {
     venueBox.tagsFromNodes = !found.fromTags
     applyTags()
     venueBox.box = { min: bounds.min.asArray(), max: bounds.max.asArray() }
-    const start = startState(venues.currentId)
-    if (start) goTo(start, false)
-    shownVenueId = venues.currentId
-    lastPoseKey = ''
+    // where the camera starts: where it was left in this venue, else saved view 1, else the overview
+    const first = venues.current?.views?.[0]
+    if (venues.currentId) walkCamera.showVenue(venues.currentId, first ? { position: first.position, rotation: first.rotation } : overviewPose(bounds))
   } catch (e) {
     if (token === loadToken) emit('error', (e as Error).message)
   } finally {
@@ -330,12 +215,12 @@ async function showModel(url?: string) {
 // --- lifecycle -------------------------------------------------------------
 
 function onKey(event: KeyboardEvent) {
-  fast = event.shiftKey
+  walkCamera?.setFast(event.shiftKey)
   selection?.setSnapping(event.shiftKey)
 }
 
 function onBlur() {
-  fast = false
+  walkCamera?.setFast(false)
   selection?.setSnapping(false) // Shift released while another window had focus
 }
 
@@ -344,20 +229,8 @@ onMounted(() => {
   scene = new Scene(engine)
   scene.clearColor = new Color4(0.02, 0.02, 0.03, 1)
 
-  camera = new UniversalCamera('cam', new Vector3(0, EYE_HEIGHT, -8), scene)
-  camera.fov = (settings.fov * Math.PI) / 180
-  camera.minZ = 0.05
-  camera.maxZ = 500
-  camera.speed = WALK_SPEED
-  camera.inertia = 0.75
-  camera.angularSensibility = 2500
-  camera.keysUp = [...CAMERA_KEYS.forward]
-  camera.keysDown = [...CAMERA_KEYS.back]
-  camera.keysLeft = [...CAMERA_KEYS.left]
-  camera.keysRight = [...CAMERA_KEYS.right]
-  camera.keysUpward = [...CAMERA_KEYS.up]
-  camera.keysDownward = [...CAMERA_KEYS.down]
-  camera.attachControl(canvas.value!, true)
+  walkCamera = new ViewerCamera(scene, canvas.value!, CAMERA_KEYS, settings.fov)
+  camera = walkCamera.camera
   canvas.value!.addEventListener('pointerleave', () => aimCursor?.hide())
 
   quality = new QualityGovernor(engine, scene, camera)
@@ -382,9 +255,6 @@ onMounted(() => {
     stats.width = engine.getRenderWidth()
     stats.height = engine.getRenderHeight()
   }, 1000)
-  // Any manual input cancels a running jump animation.
-  canvas.value!.addEventListener('pointerdown', stopTween)
-  canvas.value!.addEventListener('keydown', stopTween)
 
   ambient = new HemisphericLight('ambient', new Vector3(0, 1, 0), scene)
   ambient.intensity = settings.ambient
@@ -475,8 +345,6 @@ onMounted(() => {
   scene.onBeforeRenderObservable.add(() => {
     fixtureRig?.update()
     crowdScene?.update(performance.now() / 1000)
-    trackPose()
-    if (camera) camera.speed = WALK_SPEED * (fast ? FAST_FACTOR : 1)
   })
   engine.runRenderLoop(() => scene?.render())
   window.addEventListener('resize', onResize)
@@ -484,20 +352,17 @@ onMounted(() => {
   resizeObserver.observe(canvas.value!)
   window.addEventListener('keydown', onKey)
   window.addEventListener('keyup', onKey)
-  window.addEventListener('pagehide', flushPose)
   window.addEventListener('blur', onBlur)
 
   riderStore.ceilingAt = ceilingAt
   bridge.api = {
-    getState,
-    goTo: (state) => goTo(state, true),
+    getState: () => walkCamera!.state(),
+    goTo: (state) => walkCamera?.goTo(state),
     overview: () => {
-      const s = overviewState()
-      if (s) goTo(s, true)
+      if (bounds) walkCamera?.goTo(overviewPose(bounds))
     },
     inside: () => {
-      const s = insideState()
-      if (s) goTo(s, true)
+      if (bounds) walkCamera?.goTo(insidePose(bounds, floorUnderMiddle()))
     },
     planShot: (scale) => planShot(engine!, canvas.value!, scale),
     screenshot,
@@ -611,7 +476,7 @@ function enterTopDown(): (() => void) | null {
   const floorY = floorHit?.hit && floorHit.pickedPoint ? floorHit.pickedPoint.y : bounds.min.y
   const halfW = (bounds.max.x - bounds.min.x) / 2
   const halfD = (bounds.max.z - bounds.min.z) / 2
-  const saved = { pose: getState(), fov: camera.fov, clip: scene.clipPlane, maxZ: camera.maxZ }
+  const saved = { pose: walkCamera!.state(), fov: camera.fov, clip: scene.clipPlane, maxZ: camera.maxZ }
   const fov = (50 * Math.PI) / 180
   // the wizard panel covers the right of the view: fit the venue into what is left of it
   const panel = document.querySelector('aside[aria-label="Import tech rider"]')?.getBoundingClientRect().width ?? 0
@@ -629,7 +494,8 @@ function enterTopDown(): (() => void) | null {
   camera.maxZ = Math.max(camera.maxZ, height + (bounds.max.y - bounds.min.y) + 50)
   clipHeight = floorY + PLAN_CUT
   scene.clipPlane = new Plane(0, 1, 0, -clipHeight)
-  goTo(planPose(yaw), true)
+  walkCamera?.setRemembering(false) // the plan view is a passing look, not where the camera should start next time
+  walkCamera?.goTo(planPose(yaw))
   setPlanClutter(riderStore.hideClutter)
   fixtureRig?.setHidden(true)
   crowdScene?.setHidden(true)
@@ -644,7 +510,8 @@ function enterTopDown(): (() => void) | null {
       camera.fov = saved.fov
       camera.maxZ = saved.maxZ
     }
-    goTo(saved.pose, true)
+    walkCamera?.goTo(saved.pose)
+    walkCamera?.setRemembering(true)
     fixtureRig?.setHidden(false)
     crowdScene?.setHidden(false)
   }
@@ -701,7 +568,7 @@ watch(
   () => {
     if (!planView) return
     planView.yaw += Math.PI / 2
-    goTo(planPose(planView.yaw), true)
+    walkCamera?.goTo(planPose(planView.yaw))
   },
 )
 
@@ -1080,9 +947,7 @@ watch(
 )
 watch(
   () => settings.fov,
-  (degrees) => {
-    if (camera) camera.fov = (degrees * Math.PI) / 180
-  },
+  (degrees) => walkCamera?.setFov(degrees),
 )
 
 let resizeObserver: ResizeObserver | null = null
@@ -1110,14 +975,12 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('keyup', onKey)
   loadToken++
-  stopTween()
-  window.removeEventListener('pagehide', flushPose)
   window.removeEventListener('blur', onBlur)
-  flushPose()
   clearInterval(statsTimer)
   pipeline?.dispose()
   quality?.dispose()
   selection?.dispose()
+  walkCamera?.dispose()
   aimCursor?.dispose()
   zoneOutlines?.dispose()
   crowdScene?.dispose()

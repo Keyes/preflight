@@ -74,7 +74,7 @@ test('several lights share a pivot at their middle; turning it turns them about 
     ['b', [-1, 3, 0]],
   ])
   expect(lights.every((l) => l.rotation)).toBe(true)
-  expect(round(pivot.rotationQuaternion!.asArray())).toEqual([0, 0, 0, 1]) // back to neutral for the next drag
+  expect(round(pivot.rotationQuaternion.asArray())).toEqual([0, 0, 0, 1]) // back to neutral for the next drag
 })
 
 test('several lights moved together keep their spacing', () => {
