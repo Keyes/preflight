@@ -114,7 +114,7 @@ function lookRotation(from: Vector3, to: Vector3): Vector3 {
 
 function getState(): CameraState {
   const c = camera!
-  return { position: c.position.asArray() as CameraState['position'], rotation: c.rotation.asArray() as CameraState['rotation'] }
+  return { position: c.position.asArray(), rotation: c.rotation.asArray() }
 }
 
 function stopTween() {
@@ -153,7 +153,7 @@ function overviewState(): CameraState | undefined {
   if (!bounds) return
   const center = bounds.min.add(bounds.max).scale(0.5)
   const position = new Vector3(center.x, bounds.max.y + 8, bounds.min.z - 14)
-  return { position: position.asArray() as CameraState['position'], rotation: lookRotation(position, center).asArray() as CameraState['rotation'] }
+  return { position: position.asArray(), rotation: lookRotation(position, center).asArray() }
 }
 
 /** Eye height above the floor in the middle of the venue; the floor is found with a ray cast down from mid-height. */
@@ -164,7 +164,7 @@ function insideState(): CameraState | undefined {
   const hit = scene.pickWithRay(new Ray(center, Vector3.Down(), bounds.max.y - bounds.min.y), (m) => meshes.has(m))
   const floorY = hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : bounds.min.y
   const position = new Vector3(center.x, floorY + EYE_HEIGHT, center.z)
-  return { position: position.asArray() as CameraState['position'], rotation: [0, 0, 0] }
+  return { position: position.asArray(), rotation: [0, 0, 0] }
 }
 
 // --- venue loading ---------------------------------------------------------
@@ -175,8 +175,8 @@ const poseKey = (venueId: string) => `preflight.camera.${venueId}`
 
 function loadPose(venueId: string): CameraState | undefined {
   try {
-    const raw = JSON.parse(localStorage.getItem(poseKey(venueId)) ?? 'null')
-    const ok = (v: unknown) => Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n))
+    const raw = JSON.parse(localStorage.getItem(poseKey(venueId)) ?? 'null') as { position?: unknown; rotation?: unknown } | null
+    const ok = (v: unknown): v is [number, number, number] => Array.isArray(v) && v.length === 3 && v.every((n) => typeof n === 'number' && Number.isFinite(n))
     if (raw && ok(raw.position) && ok(raw.rotation)) return { position: raw.position, rotation: raw.rotation }
   } catch {
     /* unreadable or unavailable storage: start from the default view */
@@ -316,7 +316,7 @@ async function showModel(url?: string) {
     venueBox.tags = [...parts.keys()].sort()
     venueBox.tagsFromNodes = !found.fromTags
     applyTags()
-    venueBox.box = { min: bounds.min.asArray() as [number, number, number], max: bounds.max.asArray() as [number, number, number] }
+    venueBox.box = { min: bounds.min.asArray(), max: bounds.max.asArray() }
     const start = startState(venues.currentId)
     if (start) goTo(start, false)
     shownVenueId = venues.currentId
@@ -449,13 +449,13 @@ onMounted(() => {
   positionGizmo?.onDragEndObservable.add(() => {
     if (groupStart) return endGroupDrag(false)
     const target = selectedRoot()
-    if (target) rig.update(target.id, { position: target.root.position.asArray() as [number, number, number] })
+    if (target) rig.update(target.id, { position: target.root.position.asArray() })
   })
   rotationGizmo?.onDragEndObservable.add(() => {
     if (groupStart) return endGroupDrag(true)
     const q = selectedRoot()?.root.rotationQuaternion
     const target = selectedRoot()
-    if (target && q) rig.update(target.id, { rotation: q.normalizeToNew().asArray() as [number, number, number, number] })
+    if (target && q) rig.update(target.id, { rotation: q.normalizeToNew().asArray() })
   })
   if (rotationGizmo) setupRotationFeedback(rotationGizmo)
   applyGizmoMode(rig.gizmoMode)
@@ -518,7 +518,7 @@ onMounted(() => {
     planShot: (scale) => planShot(engine!, canvas.value!, scale),
     screenshot,
   }
-  showModel(props.modelUrl)
+  void showModel(props.modelUrl)
   fixtureRig.setSurfaceGain(2 ** settings.surfaceLight)
   fixtureRig.setHazeWisps(settings.hazeWisps)
   fixtureRig.setStrobePreview(settings.previewStrobe)
@@ -571,7 +571,7 @@ function crowdClick() {
     if (point) crowdStore.setFacing(crowdStore.facingFor, [point.x, point.z])
   } else if (drawing && !drawing.first) {
     const point = surfaceUnderPointer()
-    if (point) drawing.first = point.asArray() as [number, number, number]
+    if (point) drawing.first = point.asArray()
   } else if (drawing?.first) {
     const point = planePointUnderPointer(drawing.first[1])
     if (point) crowdStore.finishZone([point.x, point.z])
@@ -583,7 +583,7 @@ function crowdClick() {
 /** A click while the rider wizard waits for a point in the venue. */
 function riderPick() {
   const point = surfaceUnderPointer()
-  if (point) riderStore.deliverWorld(point.asArray() as [number, number, number])
+  if (point) riderStore.deliverWorld(point.asArray())
 }
 
 /** The height of the first surface above a spot, from 0.3 m over the floor: the ceiling's underside, or whatever hangs there. */
@@ -856,11 +856,14 @@ function syncMarkerGizmo() {
   markerGizmo.attachedNode = markerPivot
 }
 
+/** The draft a rider marker stands for (set in `updateRiderPreview`); undefined for any other mesh. */
+const riderKeyOf = (mesh: AbstractMesh | null | undefined) => (mesh?.metadata as { riderKey?: string } | null | undefined)?.riderKey
+
 /** A click in the review: a light's sphere selects it (Ctrl, Shift or Cmd adds), a click on nothing clears the selection. Returns true when it was for the wizard. */
 function riderMarkerClick(add: boolean): boolean {
   if (!scene || !riderStore.open || riderStore.step !== 'review' || markerDragging) return false
-  const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => !!mesh.metadata?.riderKey)
-  const key = hit?.hit ? (hit.pickedMesh?.metadata?.riderKey as string | undefined) : undefined
+  const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => !!riderKeyOf(mesh))
+  const key = hit?.hit ? riderKeyOf(hit.pickedMesh) : undefined
   if (key) {
     if (add) riderStore.toggleSelected(key)
     else riderStore.select([key])
@@ -938,7 +941,7 @@ function rectangle(
 ): LinesMesh | undefined {
   if (!scene) return existing
   const points = [new Vector3(x0, y, z0), new Vector3(x1, y, z0), new Vector3(x1, y, z1), new Vector3(x0, y, z1), new Vector3(x0, y, z0)]
-  if (existing) return MeshBuilder.CreateLines(name, { points, instance: existing }) as LinesMesh
+  if (existing) return MeshBuilder.CreateLines(name, { points, instance: existing })
   const mesh = MeshBuilder.CreateLines(name, { points, updatable: true }, scene)
   mesh.color = color
   mesh.isPickable = false
@@ -968,7 +971,7 @@ function aimAtPointer() {
   const venueMeshes = new Set(venue.meshes)
   const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => venueMeshes.has(mesh))
   if (!hit?.hit || !hit.pickedPoint) return
-  rig.aimAt(hit.pickedPoint.asArray() as [number, number, number])
+  rig.aimAt(hit.pickedPoint.asArray())
 }
 
 /** Points the lights that were aimed at the aim point (again), with the current spread and fan. */
@@ -1073,9 +1076,9 @@ function placeFixture() {
       : Quaternion.FromUnitVectorsToRef(Vector3.Up(), unit, new Quaternion())
   const choice = rig.pending
   rig.add({
-    position: point.asArray() as [number, number, number],
+    position: point.asArray(),
     mount: unit.y < 0 ? 'hanging' : 'standing',
-    rotation: rotation.asArray() as [number, number, number, number],
+    rotation: rotation.asArray(),
     ...(choice ? { profileId: choice.profileId, ...(choice.mode ? { mode: choice.mode } : {}) } : {}),
   })
   rig.placing = false
@@ -1295,9 +1298,9 @@ function endGroupDrag(rotated: boolean) {
   groupStart = null
   if (!start) return
   for (const { id, root } of start.items) {
-    const position = root.position.asArray() as [number, number, number]
+    const position = root.position.asArray()
     if (rotated && root.rotationQuaternion) {
-      rig.update(id, { position, rotation: root.rotationQuaternion.normalizeToNew().asArray() as [number, number, number, number] })
+      rig.update(id, { position, rotation: root.rotationQuaternion.normalizeToNew().asArray() })
     } else {
       rig.update(id, { position })
     }

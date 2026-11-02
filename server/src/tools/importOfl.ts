@@ -97,7 +97,7 @@ function buildFixture(manufacturerKey: string, manufacturerName: string, file: s
   if (!name || categories.length === 0 || !isObject(data.availableChannels)) return null // a redirect stub or something unusable
 
   const wheels = isObject(data.wheels) ? data.wheels : {}
-  const available = data.availableChannels as Json
+  const available = data.availableChannels
 
   // Fine channels have their own names in the mode lists: map those back to the channel they refine.
   const info = new Map<string, string>()

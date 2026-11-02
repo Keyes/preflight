@@ -182,7 +182,7 @@ onMounted(() => {
   window.addEventListener('keydown', guardOutside, true)
   let last: { id?: string; mode?: string } = {}
   try {
-    last = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}')
+    last = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '{}') as typeof last
   } catch {
     /* ignore */
   }

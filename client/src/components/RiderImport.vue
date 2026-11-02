@@ -275,7 +275,7 @@ const venueName = computed(() => venues.current?.name ?? '')
         <div v-if="rider.planImage" class="plan" :class="{ crosshair: true }">
           <img ref="image" :src="rider.planImage.url" alt="The plan page of the rider" @click="onPlanClick" />
           <span v-for="dot in lampDots" :key="dot.id" class="dot" :style="dot.style" />
-          <span v-for="(p, i) in rider.planPoints" :key="i" v-show="p" class="ref" :class="{ on: activePoint === i }" :style="p ? marker(p) : {}">{{
+          <span v-for="(p, i) in rider.planPoints" v-show="p" :key="i" class="ref" :class="{ on: activePoint === i }" :style="p ? marker(p) : {}">{{
             'AB'[i]
           }}</span>
         </div>

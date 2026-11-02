@@ -1,6 +1,9 @@
 import { execFile } from 'node:child_process'
 import { rename, rm, stat } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
+import { promisify } from 'node:util'
+
+const run = promisify(execFile)
 
 const CONVERTER = fileURLToPath(new URL(`../../converter/build/skp2glb${process.platform === 'win32' ? '.exe' : ''}`, import.meta.url))
 
@@ -18,21 +21,19 @@ export async function converterVersion(): Promise<string> {
 }
 
 /** Runs the native skp2glb converter; writes the GLB atomically. */
-export function convertSkp(skp: string, glb: string): Promise<void> {
+export async function convertSkp(skp: string, glb: string): Promise<void> {
   const tmp = `${glb}.tmp`
-  return new Promise((resolve, reject) => {
-    execFile(CONVERTER, [skp, tmp], { timeout: 120_000, maxBuffer: 1 << 20 }, async (err, _out, stderr) => {
-      if (err) {
-        await rm(tmp, { force: true })
-        const reason =
-          (err as NodeJS.ErrnoException).code === 'ENOENT'
-            ? 'the SketchUp converter is not built (see "The SketchUp SDK" in the README), or upload the model as glTF (.glb) instead'
-            : stderr.trim() || err.message
-        reject(new Error(reason))
-        return
-      }
-      await rename(tmp, glb)
-      resolve()
-    })
-  })
+  try {
+    await run(CONVERTER, [skp, tmp], { timeout: 120_000, maxBuffer: 1 << 20 })
+  } catch (err) {
+    await rm(tmp, { force: true })
+    const { code, stderr, message } = err as NodeJS.ErrnoException & { stderr?: string }
+    throw new Error(
+      code === 'ENOENT'
+        ? 'the SketchUp converter is not built (see "The SketchUp SDK" in the README), or upload the model as glTF (.glb) instead'
+        : stderr?.trim() || message,
+      { cause: err },
+    )
+  }
+  await rename(tmp, glb)
 }

@@ -184,7 +184,7 @@ test('an answer that is not JSON is asked for again', async () => {
   const provider: VisionProvider = {
     name: 'fake',
     model: 'fake',
-    ask: async () => (n++ === 0 ? 'oops, not json' : '{"drawing":{"x0":0,"y0":0,"x1":1,"y1":1}}'),
+    ask: () => Promise.resolve(n++ === 0 ? 'oops, not json' : '{"drawing":{"x0":0,"y0":0,"x1":1,"y1":1}}'),
   }
   const canvas = createCanvas(100, 100)
   const reading = await readPlan(provider, { canvas, width: 100, height: 100 }, 1, [])
@@ -208,7 +208,7 @@ test('readPlan keeps each light from the band it belongs to, skips projectors, a
     '{"lamps":[{"label":"999","symbol":"Zoom PAR","x":0.5,"y":0.5}]}',
   ]
   let n = 0
-  const provider: VisionProvider = { name: 'fake', model: 'fake', ask: async () => (n++ === 0 ? layout : bandAnswers[n - 2]) }
+  const provider: VisionProvider = { name: 'fake', model: 'fake', ask: () => Promise.resolve(n++ === 0 ? layout : bandAnswers[n - 2]) }
   const canvas = createCanvas(1000, 1000)
   const reading = await readPlan(provider, { canvas, width: 1000, height: 1000 }, 2, [row('#201', 'LX1', 'Zoom1')])
   assert.equal(reading.plan.trusses.LX1.underside, 4)
@@ -228,7 +228,7 @@ test('readPlan looks again, band by band, for patch rows it did not find, and ke
   const second = ['{"lamps":[]}', '{"lamps":[{"label":"27","symbol":"Conv. PAR","x":0.5,"y":0.5},{"label":"999","x":0.5,"y":0.5}]}', '{"lamps":[]}']
   const answers = [layout, seen, '{"lamps":[]}', '{"lamps":[]}', ...second]
   let n = 0
-  const provider: VisionProvider = { name: 'fake', model: 'fake', ask: async () => answers[n++] ?? '{"lamps":[]}' }
+  const provider: VisionProvider = { name: 'fake', model: 'fake', ask: () => Promise.resolve(answers[n++] ?? '{"lamps":[]}') }
   const canvas = createCanvas(1000, 1000)
   const reading = await readPlan(provider, { canvas, width: 1000, height: 1000 }, 2, [row('#201', 'LX1'), row('#27', 'LX4', 'Merch')])
   assert.equal(n, 7)

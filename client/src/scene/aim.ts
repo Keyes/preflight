@@ -126,7 +126,7 @@ export function solveAim(rig: FixtureRig, fixtures: readonly Fixture[], point: V
     } else {
       const current = rig.beamDirectionOf(fixture.id)
       if (!current) return
-      patches.set(fixture.id, { rotation: solveFixed(root, current, direction).asArray() as [number, number, number, number] })
+      patches.set(fixture.id, { rotation: solveFixed(root, current, direction).asArray() })
     }
   })
   return { patches, unreachable }

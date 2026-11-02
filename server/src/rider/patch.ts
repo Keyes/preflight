@@ -24,7 +24,10 @@ export async function pdfLayoutText(path: string): Promise<string[]> {
     const content = await page.getTextContent()
     const items: TextItem[] = content.items
       .filter((i): i is typeof i & { str: string; transform: number[]; width: number } => 'str' in i && i.str.trim() !== '')
-      .map((i) => ({ str: i.str, x: i.transform[4], y: i.transform[5], width: i.width }))
+      .map((i) => {
+        const [, , , , x, y] = i.transform as number[]
+        return { str: i.str, x, y, width: i.width }
+      })
     const rows: TextItem[][] = []
     for (const item of items.sort((a, b) => b.y - a.y || a.x - b.x)) {
       const row = rows.find((r) => Math.abs(r[0].y - item.y) < 3)

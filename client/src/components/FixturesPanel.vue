@@ -9,7 +9,8 @@ import { useRig } from '../stores/rig'
 import { useSettings } from '../stores/settings'
 import { useTransfer } from '../stores/transfer'
 import { useVenues } from '../stores/venues'
-import ContextMenu, { type MenuItem } from './ContextMenu.vue'
+import ContextMenu from './ContextMenu.vue'
+import type { MenuItem } from './contextMenu'
 import FixtureIcon from './FixtureIcon.vue'
 import InlineRename from './InlineRename.vue'
 import SidebarSection from './SidebarSection.vue'
@@ -37,7 +38,7 @@ function typeName(f: Fixture) {
 /** The ⋯ menu beside "+ Place light": the other ways lights come in. */
 const moreMenu = ref<{ x: number; y: number } | null>(null)
 const moreItems = computed<MenuItem[]>(() => [
-  { label: 'Import tech rider…', action: () => riderImport.show() },
+  { label: 'Import tech rider…', action: () => void riderImport.show() },
   ...(store.venues.length > 1 ? [{ label: 'Import from another venue…', action: () => transfer.openImport() }] : []),
 ])
 function openMore(event: MouseEvent) {

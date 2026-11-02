@@ -3,7 +3,8 @@ import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 import type { CameraView } from '../api'
 import { useCameraBridge } from '../stores/camera'
 import { useVenues } from '../stores/venues'
-import ContextMenu, { type MenuItem } from './ContextMenu.vue'
+import ContextMenu from './ContextMenu.vue'
+import type { MenuItem } from './contextMenu'
 import SidebarSection from './SidebarSection.vue'
 
 const store = useVenues()
@@ -26,7 +27,7 @@ async function saveCurrent() {
   error.value = null
   try {
     await store.setViews([...store.currentViews, view])
-    startRename(view)
+    void startRename(view)
   } catch (e) {
     error.value = (e as Error).message
   }
@@ -45,9 +46,9 @@ function menuItems(id: string): MenuItem[] {
   const view = store.currentViews.find((v) => v.id === id)
   if (!view) return []
   return [
-    { label: 'Rename', action: () => startRename(view) },
-    { label: 'Update to current camera', action: () => updateToCurrent(id) },
-    { label: 'Delete', danger: true, action: () => remove(id) },
+    { label: 'Rename', action: () => void startRename(view) },
+    { label: 'Update to current camera', action: () => void updateToCurrent(id) },
+    { label: 'Delete', danger: true, action: () => void remove(id) },
   ]
 }
 

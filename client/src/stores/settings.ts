@@ -53,7 +53,7 @@ export const RENDER_MOVING_DEFAULT = 1 / 4
 /** The listed fraction closest to a stored value, or the fallback when it is not a number. */
 function nearestFraction(value: unknown, fallback: number): number {
   if (typeof value !== 'number' || !Number.isFinite(value)) return fallback
-  return RENDER_FRACTIONS.reduce((best, f) => (Math.abs(f - value) < Math.abs(best - value) ? f : best), fallback as number)
+  return RENDER_FRACTIONS.reduce((best, f) => (Math.abs(f - value) < Math.abs(best - value) ? f : best), fallback)
 }
 
 export const TONE_MAPPINGS = ['off', 'neutral', 'aces'] as const

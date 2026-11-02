@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import type { DemoPreset } from './demo.js'
 
 // venues.ts reads VENUES_DIR when it loads, so it is imported only after pointing that at a scratch folder
 const dir = await mkdtemp(join(tmpdir(), 'preflight-demo-'))
@@ -32,7 +33,7 @@ test('the demo venue opens with its model, lights, groups, haze, crowd and views
 })
 
 test('every demo light is in the fixture catalog, and every group lists demo lights only', async () => {
-  const preset = JSON.parse(await readFile(join(samples, 'demo-club.json'), 'utf8'))
+  const preset = JSON.parse(await readFile(join(samples, 'demo-club.json'), 'utf8')) as DemoPreset
   const catalog = new Set((await catalogFixtures()).map((f) => f.id))
   const ids = new Set<string>()
   for (const fixture of preset.fixtures) {

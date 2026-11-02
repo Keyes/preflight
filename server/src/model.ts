@@ -116,7 +116,7 @@ export async function prepareGltfModel(upload: string, format: 'glb' | 'gltf', g
     }
     let gltf: unknown
     try {
-      gltf = JSON.parse((await readFile(upload, 'utf8')).replace(/^﻿/, ''))
+      gltf = JSON.parse((await readFile(upload, 'utf8')).replace(/^\uFEFF/, ''))
     } catch {
       throw new ModelError('not a glTF model (unreadable JSON)')
     }

@@ -76,7 +76,7 @@ function spreadSpots(n: number, width: number, depth: number, random: () => numb
   const cell = Math.max(Math.sqrt((width * depth) / n) * 0.7, Math.max(width, depth) / 400)
   const cols = Math.max(1, Math.ceil(width / cell))
   const rows = Math.max(1, Math.ceil(depth / cell))
-  const grid: number[][] = new Array(cols * rows)
+  const grid: number[][] = new Array<number[]>(cols * rows)
   const cellOf = (x: number, z: number) => [Math.min(cols - 1, Math.floor(x / cell)), Math.min(rows - 1, Math.floor(z / cell))]
 
   /** Squared distance from a point to the nearest spot placed so far. */

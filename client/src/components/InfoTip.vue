@@ -28,7 +28,7 @@ function place() {
   style.value = { left: `${left}px`, top: `${top}px` }
 }
 
-async function show(delay = 120) {
+function show(delay = 120) {
   clearTimeout(timer)
   timer = setTimeout(async () => {
     open.value = true

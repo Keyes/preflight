@@ -89,7 +89,7 @@ test('checks a GLB from its header and JSON chunk', async () => {
 
 test('wraps a self-contained .gltf as a GLB the checks accept', async () => {
   const gltf = doc({ uri: 'data:application/octet-stream;base64,AAAAAA==', byteLength: 4 })
-  const upload = await file('model.gltf', `﻿${JSON.stringify(gltf, null, 2)}`)
+  const upload = await file('model.gltf', `\uFEFF${JSON.stringify(gltf, null, 2)}`)
   const out = join(dir, 'model-from-gltf.glb')
   await prepareGltfModel(upload, 'gltf', out)
   await checkGlb(out)

@@ -1,11 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted } from 'vue'
-
-export interface MenuItem {
-  label: string
-  action: () => void
-  danger?: boolean
-}
+import type { MenuItem } from './contextMenu'
 
 defineProps<{ x: number; y: number; items: MenuItem[] }>()
 const emit = defineEmits<{ (e: 'close'): void }>()

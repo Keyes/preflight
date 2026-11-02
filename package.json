@@ -15,7 +15,8 @@
     "dev:client": "npm run dev -w client",
     "dev:server": "npm run dev -w server",
     "format": "prettier --write \"{client,server}/src/**/*.{ts,vue,css}\" \"*.js\" client/vite.config.ts",
-    "format:check": "prettier --check \"{client,server}/src/**/*.{ts,vue,css}\" \"*.js\" client/vite.config.ts"
+    "format:check": "prettier --check \"{client,server}/src/**/*.{ts,vue,css}\" \"*.js\" client/vite.config.ts",
+    "lint": "eslint ."
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

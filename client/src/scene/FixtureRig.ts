@@ -7,7 +7,6 @@ import {
   FreeCamera,
   Light,
   Mesh,
-  MeshBuilder,
   Quaternion,
   Ray,
   RenderTargetTexture,
@@ -329,7 +328,7 @@ export class FixtureRig {
     for (const node of this.nodes.values()) if (node.projected) this.updateProjectionFrame(node, time)
     this.measureAims()
     let changed = false
-    let all = this.shadowsDirty
+    const all = this.shadowsDirty
     this.shadowsDirty = false
     for (const node of this.nodes.values()) {
       if (all || node.shadowDirty) {
@@ -858,8 +857,8 @@ export class FixtureRig {
   }
 
   private applyAbsorbers(node: FixtureNode) {
-    const rect: number[] = new Array(32).fill(0)
-    const info: number[] = new Array(32).fill(0)
+    const rect: number[] = new Array<number>(32).fill(0)
+    const info: number[] = new Array<number>(32).fill(0)
     this.absorbers.forEach((a, i) => {
       rect.splice(i * 4, 4, a.minX, a.minZ, a.maxX, a.maxZ)
       info.splice(i * 4, 4, a.floor, a.top, a.strength, 0)
