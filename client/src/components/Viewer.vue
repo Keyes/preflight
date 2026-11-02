@@ -12,6 +12,7 @@ import {
   ImageProcessingConfiguration,
   LoadAssetContainerAsync,
   Matrix,
+  Mesh,
   MeshBuilder,
   Plane,
   Observer,
@@ -29,7 +30,6 @@ import {
   Vector3,
   type LinesMesh,
   type PickingInfo,
-  type Mesh,
   type AbstractMesh,
   type Node,
 } from '@babylonjs/core'
@@ -38,6 +38,7 @@ import { profilesVersion } from '../fixtures/profiles'
 import { CAMERA_KEYS } from '../input/keymap'
 import { solveAim } from '../scene/aim'
 import { Crowd as CrowdScene } from '../scene/Crowd'
+import { clutterCut, triangleIndices } from '../scene/planClutter'
 import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
 import { QualityGovernor } from '../scene/quality'
 import { captureCanvas, planShot, SHOT_ASPECT } from '../scene/screenshot'
@@ -680,102 +681,42 @@ function enterTopDown(): (() => void) | null {
   }
 }
 
-/**
- * Objects standing on the floor (speaker stacks, trusses, truss legs, stands) cover the spots a plan is placed by. The model
- * is a few meshes with everything of one material in each, so they are found as the connected pieces of those meshes: pieces
- * with a footprint of at most 3.2 m and no higher than 2.5 m over the floor, or thin posts (at most 0.5 m across) up to 4 m.
- * Hiding a piece takes its triangles out of the mesh, which also takes it out of what a click can hit.
- */
+/** The pieces taken out of the model for the plan view (see planClutter.ts), with what puts them back. */
 interface ClutterCut {
-  mesh: AbstractMesh
-  original: ReturnType<AbstractMesh['getIndices']>
+  mesh: Mesh
+  /** the mesh's own triangles; the full list for a mesh drawn without an index buffer */
+  original: ArrayLike<number>
+  unindexed: boolean
   hiddenAll: boolean
 }
 let planClutter: ClutterCut[] = []
-
-/** The triangles of a mesh that belong to pieces to hide (pieces joined by vertices at the same place). */
-function clutterTriangles(mesh: AbstractMesh, floorY: number): { keep: number[]; hidden: number } | null {
-  const positions = mesh.getVerticesData('position')
-  const indices = mesh.getIndices()
-  if (!positions || !indices) return null
-  const m = mesh.computeWorldMatrix(true).m
-  const count = positions.length / 3
-  const first = new Map<string, number>()
-  const rep = new Int32Array(count)
-  for (let i = 0; i < count; i++) {
-    const key = `${Math.round(positions[3 * i] * 1000)}|${Math.round(positions[3 * i + 1] * 1000)}|${Math.round(positions[3 * i + 2] * 1000)}`
-    const seen = first.get(key)
-    if (seen === undefined) first.set(key, i)
-    rep[i] = seen ?? i
-  }
-  const parent = Int32Array.from({ length: count }, (_, i) => i)
-  const find = (a: number) => {
-    while (parent[a] !== a) {
-      parent[a] = parent[parent[a]]
-      a = parent[a]
-    }
-    return a
-  }
-  for (let t = 0; t < indices.length; t += 3) {
-    const a = find(rep[indices[t]])
-    parent[find(rep[indices[t + 1]])] = a
-    parent[find(rep[indices[t + 2]])] = a
-  }
-  const boxes = new Map<number, number[]>() // x0, x1, y1, z0, z1
-  for (let i = 0; i < count; i++) {
-    const x = positions[3 * i]
-    const y = positions[3 * i + 1]
-    const z = positions[3 * i + 2]
-    const wx = m[0] * x + m[4] * y + m[8] * z + m[12]
-    const wy = m[1] * x + m[5] * y + m[9] * z + m[13]
-    const wz = m[2] * x + m[6] * y + m[10] * z + m[14]
-    const root = find(rep[i])
-    const b = boxes.get(root)
-    if (!b) boxes.set(root, [wx, wx, wy, wz, wz])
-    else {
-      b[0] = Math.min(b[0], wx)
-      b[1] = Math.max(b[1], wx)
-      b[2] = Math.max(b[2], wy)
-      b[3] = Math.min(b[3], wz)
-      b[4] = Math.max(b[4], wz)
-    }
-  }
-  const hide = new Set<number>()
-  for (const [root, b] of boxes) {
-    const dx = b[1] - b[0]
-    const dz = b[4] - b[3]
-    const top = b[2] - floorY
-    if ((dx <= 3.2 && dz <= 3.2 && top <= 2.5) || (dx <= 0.5 && dz <= 0.5 && top <= 4)) hide.add(root)
-  }
-  if (hide.size === 0) return null
-  const keep: number[] = []
-  let hidden = 0
-  for (let t = 0; t < indices.length; t += 3) {
-    if (hide.has(find(rep[indices[t]]))) hidden++
-    else keep.push(indices[t], indices[t + 1], indices[t + 2])
-  }
-  return { keep, hidden }
-}
 
 function setPlanClutter(hidden: boolean) {
   if (!planView || !venue) return
   if (hidden && planClutter.length === 0) {
     for (const mesh of venue.meshes) {
-      const cut = clutterTriangles(mesh, planView.floorY)
-      const original = mesh.getIndices()
-      if (!cut || !original) continue
-      if (cut.keep.length === 0) {
+      const positions = mesh.getVerticesData('position')
+      if (!(mesh instanceof Mesh) || !positions) continue
+      const original = triangleIndices(mesh.getIndices(), mesh.getTotalVertices())
+      const cut = clutterCut(positions, original, mesh.computeWorldMatrix(true).m, planView.floorY)
+      if (!cut) continue
+      const entry: ClutterCut = { mesh, original, unindexed: mesh.isUnIndexed, hiddenAll: cut.keep.length === 0 }
+      if (entry.hiddenAll) {
         mesh.isVisible = false
-        planClutter.push({ mesh, original, hiddenAll: true })
       } else {
         mesh.setIndices(cut.keep, mesh.getTotalVertices())
-        planClutter.push({ mesh, original, hiddenAll: false })
+        mesh.isUnIndexed = false // drawn and picked by the indices now, also when the model came without them
       }
+      planClutter.push(entry)
     }
   } else if (!hidden) {
-    for (const { mesh, original, hiddenAll } of planClutter) {
-      if (hiddenAll) mesh.isVisible = true
-      else if (original) mesh.setIndices(original, mesh.getTotalVertices())
+    for (const { mesh, original, unindexed, hiddenAll } of planClutter) {
+      if (hiddenAll) {
+        mesh.isVisible = true
+      } else {
+        mesh.setIndices(Array.from(original), mesh.getTotalVertices())
+        mesh.isUnIndexed = unindexed
+      }
     }
     planClutter = []
   }
