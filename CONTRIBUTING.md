@@ -28,7 +28,7 @@ What the checks enforce, and what a review looks at beyond them, is in [docs/eng
 
 - Keep a pull request to one change, and say in its description what it does and how you checked it. A screenshot helps for anything visible.
 - Write code that reads like the code around it: the same naming, structure and amount of comments. Comments explain why something is done, not what the next line does.
-- Add or update tests next to the code (`*.test.ts` in `server/src/` or `client/src/`) when you change logic, and in `server/src/index.test.ts` when you change what a route accepts. Test data must be made up.
+- Add or update tests next to the code (`*.test.ts` in `server/src/`, `client/src/` or `shared/src/`) when you change logic, and in `server/src/index.test.ts` when you change what a route accepts. Test data must be made up.
 - Update the README (and `docs/roadmap.md`) when you change what the app can do or how it's set up.
 - Commit messages are one plain sentence that says what the change does, for example "Hide small floor objects while the rider plan is being placed".
 
