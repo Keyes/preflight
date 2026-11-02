@@ -31,6 +31,15 @@ export function planShot(engine: Engine, canvas: HTMLCanvasElement, scale: numbe
   return { width, height: (width * 9) / 16 }
 }
 
+/**
+ * The vertical field of view for a picture of the view. The picture is the middle 16:9 part of the view: a window wider
+ * than that only loses its sides, but a narrower one must keep its width and lose top and bottom, so the field of view shrinks.
+ */
+export function shotFov(fov: number, canvas: HTMLCanvasElement): number {
+  const viewAspect = canvas.clientWidth / Math.max(1, canvas.clientHeight)
+  return viewAspect < SHOT_ASPECT ? 2 * Math.atan((Math.tan(fov / 2) * viewAspect) / SHOT_ASPECT) : fov
+}
+
 /** Frames to let the engine render after resizing before copying: the resize itself, rebuilding the post-processing buffers, then a clean one. */
 const SETTLE_FRAMES = 3
 
