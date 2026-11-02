@@ -1,0 +1,61 @@
+/*
+ * Design tokens: the colors, shadows and type every panel uses. Components refer to these
+ * instead of repeating hex values, so a change of look happens here once.
+ * Colors that mean something in the scene (axis colors, plan markers) stay in their components.
+ */
+:root {
+  /* surfaces, darkest first */
+  --bg: #05050a; /* behind the 3D view */
+  --panel: #111118; /* sidebar and inspector dock */
+  --well: #0f0f16; /* recessed areas: tooltips, thumbnails */
+  --surface: #1a1a24; /* popovers, inputs, row hover */
+  --surface-2: #22222c; /* controls on a surface, key caps */
+  --selected: #25253a; /* selected rows, pressed buttons */
+  --overlay: rgba(17, 17, 24, 0.85); /* buttons floating over the view */
+  --scrim: rgba(5, 5, 10, 0.62); /* behind modal windows */
+  --glass: rgba(26, 26, 36, 0.86); /* popovers over the view, with --frost behind them */
+  --frost: blur(10px) saturate(1.2);
+
+  /* lines */
+  --line: #22222c; /* panel edges */
+  --border: #2c2c3a; /* control and popover borders */
+
+  /* text, brightest first */
+  --text-bright: #fff;
+  --text-strong: #e8e8f2;
+  --text: #d8d8e0;
+  --text-2: #c8c8d8;
+  --text-soft: #a4a4b4;
+  --text-muted: #8a8a99;
+  --text-dim: #6d6d80;
+  --text-disabled: #5d5d70;
+
+  /* accent and states */
+  --accent: #7c9cff; /* links, sliders, focus */
+  --accent-text: #a8bcff; /* values and live hints */
+  --accent-strong: #3b5bdb; /* primary buttons */
+  --accent-strong-hover: #3a5acc;
+  --danger: #ff9aa2;
+  --danger-bg: #4a1f24;
+  --warn: #ffcf8a;
+  --caution: #e8b45a; /* something looks wrong but nothing is broken */
+  --ok: #7ad69a;
+
+  /* the venue's blue tint: the venue card, what is saved with the venue */
+  --tint-surface: #1a1a28;
+  --tint-surface-hover: #202033;
+  --tint-line: #2a2d46;
+  --tint-border: #2f3350;
+  --tint-border-hover: #3f4570;
+  --tint-strong: #3a4270;
+  --tint-text: #8a8fb8;
+  --tint-text-bright: #a8b4e8;
+
+  /* depth */
+  --shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 16px 48px rgba(0, 0, 0, 0.6);
+
+  /* type */
+  --font-sans: system-ui, sans-serif;
+  --font-mono: ui-monospace, monospace;
+}

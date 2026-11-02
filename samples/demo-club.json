@@ -1,0 +1,727 @@
+{
+  "name": "Demo club",
+  "atmosphere": {
+    "haze": 0.5,
+    "ambient": 0.12
+  },
+  "crowd": {
+    "shown": true,
+    "density": 0.55,
+    "motion": "sway",
+    "intensity": 0.6,
+    "zones": [
+      {
+        "id": "2c34e94d-ef76-47be-a9b0-aa3ab4bbfdac",
+        "name": "Dance floor",
+        "x0": -6.5,
+        "z0": 0.3,
+        "x1": 6.5,
+        "z1": 6,
+        "y": 0,
+        "facing": [
+          0,
+          -5
+        ],
+        "shown": true
+      }
+    ]
+  },
+  "views": [
+    {
+      "id": "bebe4a8f-1b7e-435e-ac00-3fa9704001d4",
+      "name": "Overview",
+      "position": [
+        0,
+        4.6,
+        9.3
+      ],
+      "rotation": [
+        0.2219,
+        3.1416,
+        0
+      ]
+    },
+    {
+      "id": "8bbd3c1e-a416-4ddc-a879-041d815c92b3",
+      "name": "Front row",
+      "position": [
+        1.2,
+        1.7,
+        0.4
+      ],
+      "rotation": [
+        -0.2264,
+        -2.9562,
+        0
+      ]
+    },
+    {
+      "id": "27a5848f-f996-4b9a-ad01-62c8336febee",
+      "name": "From the stage",
+      "position": [
+        0,
+        2.8,
+        -6.6
+      ],
+      "rotation": [
+        0.1263,
+        0,
+        0
+      ]
+    },
+    {
+      "id": "933d321c-1e10-4d3f-a8d0-91aa8641a9c7",
+      "name": "At the bar",
+      "position": [
+        7.6,
+        1.65,
+        6.2
+      ],
+      "rotation": [
+        -0.0961,
+        -2.3865,
+        0
+      ]
+    }
+  ],
+  "fixtures": [
+    {
+      "id": "f706b908-75b0-4526-a9b4-fc0185720cde",
+      "name": "Wash 1",
+      "profileId": "chauvet-professional/rogue-r1-wash",
+      "position": [
+        -5,
+        5.855,
+        -5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "21-channel",
+      "values": {
+        "pan": 0.7741,
+        "tilt": 0.5923,
+        "dimmer": 0.85,
+        "zoom": 0.65,
+        "focus": 0.5,
+        "red": 0.08,
+        "green": 0.2,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "cfd92fb3-4179-4313-a3a8-6e97dc58bbc0",
+      "name": "Wash 2",
+      "profileId": "chauvet-professional/rogue-r1-wash",
+      "position": [
+        -3,
+        5.855,
+        -5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "21-channel",
+      "values": {
+        "pan": 0.7953,
+        "tilt": 0.5843,
+        "dimmer": 0.85,
+        "zoom": 0.65,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.08,
+        "blue": 0.75,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "a95536a2-1227-4904-ac88-207f20bb95c7",
+      "name": "Wash 3",
+      "profileId": "chauvet-professional/rogue-r1-wash",
+      "position": [
+        -1,
+        5.855,
+        -5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "21-channel",
+      "values": {
+        "pan": 0.8201,
+        "tilt": 0.5799,
+        "dimmer": 0.85,
+        "zoom": 0.65,
+        "focus": 0.5,
+        "red": 0.08,
+        "green": 0.2,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "6b2bfb9a-25c3-4f64-a6c9-add27701029f",
+      "name": "Wash 4",
+      "profileId": "chauvet-professional/rogue-r1-wash",
+      "position": [
+        1,
+        5.855,
+        -5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "21-channel",
+      "values": {
+        "pan": 0.1799,
+        "tilt": 0.5799,
+        "dimmer": 0.85,
+        "zoom": 0.65,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.08,
+        "blue": 0.75,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "5e1edf23-8091-4420-af75-35e8c250856c",
+      "name": "Wash 5",
+      "profileId": "chauvet-professional/rogue-r1-wash",
+      "position": [
+        3,
+        5.855,
+        -5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "21-channel",
+      "values": {
+        "pan": 0.2047,
+        "tilt": 0.5843,
+        "dimmer": 0.85,
+        "zoom": 0.65,
+        "focus": 0.5,
+        "red": 0.08,
+        "green": 0.2,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "a1f82019-2dc4-4dce-a51f-073322561f30",
+      "name": "Wash 6",
+      "profileId": "chauvet-professional/rogue-r1-wash",
+      "position": [
+        5,
+        5.855,
+        -5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "21-channel",
+      "values": {
+        "pan": 0.2259,
+        "tilt": 0.5923,
+        "dimmer": 0.85,
+        "zoom": 0.65,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.08,
+        "blue": 0.75,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "259efb07-4ccf-4b1d-af5f-e0b7f152b6ac",
+      "name": "Beam 1",
+      "profileId": "clay-paky/sharpy",
+      "position": [
+        -4.5,
+        5.855,
+        -7.2
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "Standard",
+      "values": {
+        "pan": 0.2206,
+        "tilt": 0.7488,
+        "dimmer": 1,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "420fd1f8-766f-42b7-acf2-13aff8e356b6",
+      "name": "Beam 2",
+      "profileId": "clay-paky/sharpy",
+      "position": [
+        -1.5,
+        5.855,
+        -7.2
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "Standard",
+      "values": {
+        "pan": 0.1861,
+        "tilt": 0.7372,
+        "dimmer": 1,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "193dfffb-5552-42a2-a9d0-dbe80027c756",
+      "name": "Beam 3",
+      "profileId": "clay-paky/sharpy",
+      "position": [
+        1.5,
+        5.855,
+        -7.2
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "Standard",
+      "values": {
+        "pan": 0.8139,
+        "tilt": 0.7372,
+        "dimmer": 1,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "d8001753-db5b-48c7-ad5c-d6a6cc296f34",
+      "name": "Beam 4",
+      "profileId": "clay-paky/sharpy",
+      "position": [
+        4.5,
+        5.855,
+        -7.2
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        1,
+        0,
+        0,
+        0
+      ],
+      "mode": "Standard",
+      "values": {
+        "pan": 0.7794,
+        "tilt": 0.7488,
+        "dimmer": 1,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "abbc3a58-227a-4a03-a2e7-3d107f9f1437",
+      "name": "Floor beam 1",
+      "profileId": "clay-paky/sharpy",
+      "position": [
+        -5.2,
+        1,
+        -7.3
+      ],
+      "mount": "standing",
+      "yaw": 0,
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "mode": "Standard",
+      "values": {
+        "pan": 0.5979,
+        "tilt": 0.7404,
+        "dimmer": 1,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "de17a0d0-a75d-4245-a9e0-a50a9d96e127",
+      "name": "Floor beam 2",
+      "profileId": "clay-paky/sharpy",
+      "position": [
+        5.2,
+        1,
+        -7.3
+      ],
+      "mount": "standing",
+      "yaw": 0,
+      "rotation": [
+        0,
+        0,
+        0,
+        1
+      ],
+      "mode": "Standard",
+      "values": {
+        "pan": 0.4021,
+        "tilt": 0.7404,
+        "dimmer": 1,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 1,
+        "blue": 1,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "a7858071-24b2-4bf5-a390-19d7e23d4e5a",
+      "name": "Front 1",
+      "profileId": "cameo/flat-pro-18",
+      "position": [
+        -5,
+        5.855,
+        -2.5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        -0.84278,
+        0,
+        -0.458033,
+        0.282714
+      ],
+      "mode": "2-channel",
+      "values": {
+        "pan": 0.5,
+        "tilt": 0.5,
+        "dimmer": 0.55,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.82,
+        "blue": 0.6,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "fcac6f81-efa2-4b30-adb0-95a1254d74dc",
+      "name": "Front 2",
+      "profileId": "cameo/flat-pro-18",
+      "position": [
+        -3,
+        5.855,
+        -2.5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        -0.91655,
+        0,
+        -0.298875,
+        0.265725
+      ],
+      "mode": "2-channel",
+      "values": {
+        "pan": 0.5,
+        "tilt": 0.5,
+        "dimmer": 0.55,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.82,
+        "blue": 0.6,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "4b91242a-c106-4def-a821-e89a384aa011",
+      "name": "Front 3",
+      "profileId": "cameo/flat-pro-18",
+      "position": [
+        -1,
+        5.855,
+        -2.5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        -0.960926,
+        0,
+        -0.104448,
+        0.256345
+      ],
+      "mode": "2-channel",
+      "values": {
+        "pan": 0.5,
+        "tilt": 0.5,
+        "dimmer": 0.55,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.82,
+        "blue": 0.6,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "a4a67d63-5e3f-478d-a9df-3245e68fbf3b",
+      "name": "Front 4",
+      "profileId": "cameo/flat-pro-18",
+      "position": [
+        1,
+        5.855,
+        -2.5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        -0.960926,
+        0,
+        0.104448,
+        0.256345
+      ],
+      "mode": "2-channel",
+      "values": {
+        "pan": 0.5,
+        "tilt": 0.5,
+        "dimmer": 0.55,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.82,
+        "blue": 0.6,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "bf9728ce-2d04-4bdf-aafe-d4aa0b15cdc1",
+      "name": "Front 5",
+      "profileId": "cameo/flat-pro-18",
+      "position": [
+        3,
+        5.855,
+        -2.5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        -0.91655,
+        0,
+        0.298875,
+        0.265725
+      ],
+      "mode": "2-channel",
+      "values": {
+        "pan": 0.5,
+        "tilt": 0.5,
+        "dimmer": 0.55,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.82,
+        "blue": 0.6,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    },
+    {
+      "id": "483bc38c-6437-4b48-adc4-b3caf1d7e98f",
+      "name": "Front 6",
+      "profileId": "cameo/flat-pro-18",
+      "position": [
+        5,
+        5.855,
+        -2.5
+      ],
+      "mount": "hanging",
+      "yaw": 0,
+      "rotation": [
+        -0.84278,
+        0,
+        0.458033,
+        0.282714
+      ],
+      "mode": "2-channel",
+      "values": {
+        "pan": 0.5,
+        "tilt": 0.5,
+        "dimmer": 0.55,
+        "zoom": 0.4,
+        "focus": 0.5,
+        "red": 1,
+        "green": 0.82,
+        "blue": 0.6,
+        "strobe": 0,
+        "gobo": 0,
+        "goboAngle": 0,
+        "goboSpin": 0.5
+      }
+    }
+  ],
+  "groups": [
+    {
+      "id": "2976bb09-1370-4690-a37a-a2e2f27a69bd",
+      "name": "Washes (mid truss)",
+      "fixtureIds": [
+        "f706b908-75b0-4526-a9b4-fc0185720cde",
+        "cfd92fb3-4179-4313-a3a8-6e97dc58bbc0",
+        "a95536a2-1227-4904-ac88-207f20bb95c7",
+        "6b2bfb9a-25c3-4f64-a6c9-add27701029f",
+        "5e1edf23-8091-4420-af75-35e8c250856c",
+        "a1f82019-2dc4-4dce-a51f-073322561f30"
+      ]
+    },
+    {
+      "id": "1e1e6dd3-fec3-4165-af19-4fffce842dd5",
+      "name": "Beams (back truss)",
+      "fixtureIds": [
+        "259efb07-4ccf-4b1d-af5f-e0b7f152b6ac",
+        "420fd1f8-766f-42b7-acf2-13aff8e356b6",
+        "193dfffb-5552-42a2-a9d0-dbe80027c756",
+        "d8001753-db5b-48c7-ad5c-d6a6cc296f34"
+      ]
+    },
+    {
+      "id": "cf1649f6-4834-4c56-a0ad-d62e38621858",
+      "name": "Floor beams",
+      "fixtureIds": [
+        "abbc3a58-227a-4a03-a2e7-3d107f9f1437",
+        "de17a0d0-a75d-4245-a9e0-a50a9d96e127"
+      ]
+    },
+    {
+      "id": "bcdf1af5-45d3-49de-af93-1f2f0506ee53",
+      "name": "Front light",
+      "fixtureIds": [
+        "a7858071-24b2-4bf5-a390-19d7e23d4e5a",
+        "fcac6f81-efa2-4b30-adb0-95a1254d74dc",
+        "4b91242a-c106-4def-a821-e89a384aa011",
+        "a4a67d63-5e3f-478d-a9df-3245e68fbf3b",
+        "bf9728ce-2d04-4bdf-aafe-d4aa0b15cdc1",
+        "483bc38c-6437-4b48-adc4-b3caf1d7e98f"
+      ]
+    }
+  ]
+}

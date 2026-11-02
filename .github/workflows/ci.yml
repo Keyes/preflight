@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    # The converter is not built here: it needs the SketchUp SDK, which can't be downloaded in CI.
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
+      - name: Type-check the server
+        run: npm run typecheck -w server
+      - name: Test the server
+        run: npm test -w server
+      - name: Type-check and build the client
+        run: npm run build -w client

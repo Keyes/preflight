@@ -1,0 +1,14 @@
+node_modules
+dist
+.DS_Store
+converter/build
+converter/sdk
+server/cache
+*.log
+SketchUp_SDK
+client/public/dev
+server/data
+# venue models are often someone else's property; keep them out of the repo
+venues/
+*.skp
+*.skb

@@ -1,0 +1,582 @@
+{
+  "_comment": "Fixtures the Open Fixture Library does not have, kept by hand and merged into the catalog by server/src/catalog.ts. Same shape as fixtures.json, plus: aliases (names a tech rider may use for it), channelCount on modes whose channel list is not known yet, and notes (where the numbers come from, what is still unverified). Candidates for a pull request to the Open Fixture Library once the channel lists are confirmed.",
+  "fixtures": [
+    {
+      "id": "chauvet-professional/rogue-r1x-spot",
+      "manufacturer": "Chauvet Professional",
+      "manufacturerKey": "chauvet-professional",
+      "name": "Rogue R1X Spot",
+      "aliases": [
+        "Chauvet RX1",
+        "Chauvet RX1 Spot",
+        "RX1 Spot"
+      ],
+      "categories": [
+        "Moving Head"
+      ],
+      "moving": true,
+      "beamAngle": [
+        16,
+        16
+      ],
+      "powerW": 303,
+      "features": [
+        "pan",
+        "tilt",
+        "dimmer",
+        "focus",
+        "gobo",
+        "prism",
+        "strobe",
+        "color-wheel",
+        "iris"
+      ],
+      "modes": [
+        {
+          "name": "16ch",
+          "shortName": "16ch",
+          "channelCount": 16,
+          "channels": []
+        },
+        {
+          "name": "19ch",
+          "shortName": "19ch",
+          "channelCount": 19,
+          "channels": [
+            [
+              "Pan",
+              "pan"
+            ],
+            [
+              "Fine pan",
+              "pan-fine"
+            ],
+            [
+              "Tilt",
+              "tilt"
+            ],
+            [
+              "Fine tilt",
+              "tilt-fine"
+            ],
+            [
+              "Pan/tilt speed",
+              "speed"
+            ],
+            [
+              "Dimmer",
+              "dimmer"
+            ],
+            [
+              "Fine dimmer",
+              "dimmer-fine"
+            ],
+            [
+              "Shutter",
+              "strobe"
+            ],
+            [
+              "Color wheel",
+              "color-wheel"
+            ],
+            [
+              "Rotating gobo wheel",
+              "gobo"
+            ],
+            [
+              "Gobo 1 rotation",
+              "gobo"
+            ],
+            [
+              "Static gobo wheel",
+              "gobo"
+            ],
+            [
+              "Focus",
+              "focus"
+            ],
+            [
+              "Prism",
+              "prism"
+            ],
+            [
+              "Rotating prism",
+              "prism"
+            ],
+            [
+              "Iris",
+              "iris"
+            ],
+            [
+              "Movement macros",
+              ""
+            ],
+            [
+              "Movement macro speed",
+              ""
+            ],
+            [
+              "Control",
+              ""
+            ]
+          ]
+        }
+      ],
+      "notes": "The rider calls it 'Chauvet RX1 Spot', 19 channels; the Rogue R1X Spot has 16 and 19 channel modes, so that is almost certainly it. The 19ch channel list is from Chauvet's Rogue R1X Spot Quick Reference Guide Rev. 6 (the 16ch list is on its later pages, not entered yet). It has no zoom channel, so the beam angle is fixed. 170 W cool white LED, 16 degree beam (one retailer; not in the QRG). Not yet found: lumens, weight, size, pan/tilt travel (viewer assumes 540/270)."
+    },
+    {
+      "id": "expolite/tourled-mc60-zoom",
+      "manufacturer": "Expolite",
+      "manufacturerKey": "expolite",
+      "name": "TourLED MC60 RGBW Zoom",
+      "aliases": [
+        "Expolite Tourled MC60 Zoom",
+        "Expolite TourLED MC60 Zoom"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "beamAngle": [
+        4.5,
+        45
+      ],
+      "powerW": 85,
+      "weightKg": 4.5,
+      "sizeMm": [
+        176,
+        242,
+        346
+      ],
+      "features": [
+        "dimmer",
+        "zoom",
+        "red",
+        "green",
+        "blue",
+        "white",
+        "strobe"
+      ],
+      "modes": [
+        {
+          "name": "9ch SSP",
+          "shortName": "9ch-SSP",
+          "channelCount": 9,
+          "channels": [
+            [
+              "Master dimmer",
+              "dimmer"
+            ],
+            [
+              "Red",
+              "red"
+            ],
+            [
+              "Green",
+              "green"
+            ],
+            [
+              "Blue",
+              "blue"
+            ],
+            [
+              "White",
+              "white"
+            ],
+            [
+              "Strobe",
+              "strobe"
+            ],
+            [
+              "Zoom",
+              "zoom"
+            ],
+            [
+              "Zoom reset",
+              ""
+            ],
+            [
+              "Dimmer speed",
+              ""
+            ]
+          ]
+        },
+        {
+          "name": "9ch HSIC",
+          "shortName": "9ch-HSIC",
+          "channelCount": 9,
+          "channels": [
+            [
+              "Intensity",
+              "dimmer"
+            ],
+            [
+              "Hue",
+              "color"
+            ],
+            [
+              "Hue fine",
+              "color"
+            ],
+            [
+              "Saturation",
+              "color"
+            ],
+            [
+              "CCT",
+              "color-temperature"
+            ],
+            [
+              "Strobe",
+              "strobe"
+            ],
+            [
+              "Zoom",
+              "zoom"
+            ],
+            [
+              "Zoom reset",
+              ""
+            ],
+            [
+              "Dimmer speed",
+              ""
+            ]
+          ]
+        },
+        {
+          "name": "12ch TOUR",
+          "shortName": "12ch-TOUR",
+          "channelCount": 12,
+          "channels": []
+        },
+        {
+          "name": "17ch TR16",
+          "shortName": "17ch-TR16",
+          "channelCount": 17,
+          "channels": []
+        }
+      ],
+      "notes": "1 x 60 W RGBW COB, motorized zoom 4.5-45 degrees, 4.5 kg (Thomann; one dealer says up to 36). The manual (Tour-LED MC 60, firmware V3XX) lists four personalities: HSIC (9), SSP (9), TOUR (12) and TR16 (17); the rider's '9Ch. SSP' is the one entered in full. Dealers' 5 and 13 channel modes are an older firmware and are not listed. Lumens not published. Channel lists for TOUR and TR16 are not entered yet."
+    },
+    {
+      "id": "stairville/mini-stage-par-7x4w-rgbw",
+      "manufacturer": "Stairville",
+      "manufacturerKey": "stairville",
+      "name": "Mini Stage PAR 7x4W RGBW",
+      "aliases": [
+        "Stairville mini stage PAR 25°",
+        "Stairville mini stage PAR"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "beamAngle": [
+        30,
+        30
+      ],
+      "powerW": 28,
+      "weightKg": 1.9,
+      "sizeMm": [
+        140,
+        210,
+        140
+      ],
+      "features": [
+        "dimmer",
+        "red",
+        "green",
+        "blue",
+        "white",
+        "strobe"
+      ],
+      "modes": [
+        {
+          "name": "4ch RGBW",
+          "shortName": "4ch",
+          "channelCount": 4,
+          "channels": [
+            [
+              "Red",
+              "red"
+            ],
+            [
+              "Green",
+              "green"
+            ],
+            [
+              "Blue",
+              "blue"
+            ],
+            [
+              "White",
+              "white"
+            ]
+          ]
+        },
+        {
+          "name": "6ch",
+          "shortName": "6ch",
+          "channelCount": 6,
+          "channels": []
+        },
+        {
+          "name": "8ch",
+          "shortName": "8ch",
+          "channelCount": 8,
+          "channels": []
+        }
+      ],
+      "notes": "7 x 4 W RGBW, 30 degree dispersion, 4/6/8 channels (Thomann, item 406531). Confirmed by the venue's user as the unit the rider means. The rider writes '25°' (RGBW, 4Ch RGBW) and '45°' (RGB, 4Ch RGB); Thomann lists only 30 degrees for this model, so the rider's angles are probably lens or generation differences. The 4ch channel order is the usual RGBW assumption, not confirmed. The 45 degree RGB units (#251-256) are not a separate entry yet: they map to this one until their spec is known."
+    },
+    {
+      "id": "unknown/cb-100-led-color-beam",
+      "manufacturer": "Unknown",
+      "manufacturerKey": "unknown",
+      "name": "CB-100 LED Color Beam",
+      "aliases": [
+        "Spiku LED",
+        "CB-100"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "features": [
+        "dimmer",
+        "color-wheel",
+        "strobe"
+      ],
+      "modes": [
+        {
+          "name": "4ch",
+          "shortName": "4ch",
+          "channelCount": 4,
+          "channels": [
+            [
+              "Dimmer",
+              "dimmer"
+            ],
+            [
+              "Color wheel",
+              "color-wheel"
+            ],
+            [
+              "Shutter",
+              "strobe"
+            ],
+            [
+              "Function",
+              ""
+            ]
+          ]
+        }
+      ],
+      "notes": "A 'CB-100 LED Color Beam' manual exists (color wheel, dimmer, shutter 0-20 Hz, 4 channel mode); its brand was not found. The channel order is taken from the rider ('1.dim, 2.colwheel, 3.shut, 4.function'). It is the mirror ball spot. Missing: brand, beam angle, power, size."
+    },
+    {
+      "id": "arri/junior-650-plus",
+      "manufacturer": "ARRI",
+      "manufacturerKey": "arri",
+      "name": "Junior 650 Plus Fresnel",
+      "aliases": [
+        "Fresnel Arri Junior 650",
+        "Arri Junior 650",
+        "Arri Junior"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "beamAngle": [
+        12,
+        52
+      ],
+      "lumens": 9000,
+      "lumensEstimated": true,
+      "powerW": 650,
+      "weightKg": 3,
+      "colorTemperature": 3200,
+      "features": [
+        "dimmer",
+        "focus"
+      ],
+      "modes": [
+        {
+          "name": "Dimmer",
+          "shortName": "dim",
+          "channelCount": 1,
+          "channels": [
+            [
+              "Dimmer",
+              "dimmer"
+            ]
+          ]
+        }
+      ],
+      "notes": "Tungsten fresnel on a dimmer channel. 650 W, 12-52 degrees spot to flood (ARRI), 4.3 inch lens, 3200 K, about 3 kg. Lumens are an estimate from the wattage. Zoom here is a manual focus, so the value is set by hand, not by DMX. Size not found."
+    },
+    {
+      "id": "generic/dwe-2-light-blinder",
+      "manufacturer": "Generic",
+      "manufacturerKey": "generic",
+      "name": "2-Light Blinder (2 x 650 W DWE)",
+      "aliases": [
+        "DWE 2Light",
+        "DWE",
+        "DWE vorn",
+        "DWE hinten"
+      ],
+      "categories": [
+        "Blinder"
+      ],
+      "moving": false,
+      "beamAngle": [
+        40,
+        40
+      ],
+      "lumens": 12000,
+      "lumensEstimated": true,
+      "powerW": 1300,
+      "weightKg": 3,
+      "sizeMm": [
+        350,
+        150,
+        235
+      ],
+      "features": [
+        "dimmer"
+      ],
+      "modes": [
+        {
+          "name": "Dimmer",
+          "shortName": "dim",
+          "channelCount": 1,
+          "channels": [
+            [
+              "Dimmer",
+              "dimmer"
+            ]
+          ]
+        }
+      ],
+      "notes": "DWE is the lamp (120 V 650 W halogen), so this is a generic two-lamp blinder, patterned on the Showtec/DAP Stage Blinder 2 (350 x 235 x 150 mm, about 3 kg) and eLumen8 DB 1300 (40 x 30 degrees). The venue's exact blinder is not named in the rider. Lumens estimated."
+    },
+    {
+      "id": "etc/source-four-750-conventional",
+      "manufacturer": "ETC",
+      "manufacturerKey": "etc",
+      "name": "Source Four 750 W (conventional)",
+      "aliases": [
+        "ETC Source Four",
+        "ETC SOURCE FOUR",
+        "Source Four",
+        "Profiler"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "beamAngle": [
+        26,
+        26
+      ],
+      "lumens": 9000,
+      "lumensEstimated": true,
+      "powerW": 750,
+      "colorTemperature": 3200,
+      "features": [
+        "dimmer",
+        "focus"
+      ],
+      "modes": [
+        {
+          "name": "Dimmer",
+          "shortName": "dim",
+          "channelCount": 1,
+          "channels": [
+            [
+              "Dimmer",
+              "dimmer"
+            ]
+          ]
+        }
+      ],
+      "notes": "Tungsten profile spot on a dimmer channel. The rider says only 'ETC Source Four', not the lens tube, so 26 degrees (the middle of the usual 19/26/36 degree tubes) is a placeholder: set the real field angle once known. Lumens estimated from the wattage; size and weight not entered."
+    },
+    {
+      "id": "generic/acl-par64-250w",
+      "manufacturer": "Generic",
+      "manufacturerKey": "generic",
+      "name": "ACL PAR 64 (28 V 250 W)",
+      "aliases": [
+        "ACL"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "beamAngle": [
+        11,
+        12
+      ],
+      "powerW": 250,
+      "colorTemperature": 3200,
+      "features": [
+        "dimmer"
+      ],
+      "modes": [
+        {
+          "name": "Dimmer",
+          "shortName": "dim",
+          "channelCount": 1,
+          "channels": [
+            [
+              "Dimmer",
+              "dimmer"
+            ]
+          ]
+        }
+      ],
+      "notes": "Placeholder for the aircraft-landing-light bars (several 28 V 250 W lamps in series on one dimmer channel). The 11 x 12 degree spread is the 250 W PAR 36 lamp's figure (Boeing listing); the venue's PAR 64 ACL lamp is only known to be very narrow, so check it. Lumens not entered."
+    },
+    {
+      "id": "generic/conventional-par",
+      "manufacturer": "Generic",
+      "manufacturerKey": "generic",
+      "name": "Conventional PAR (placeholder)",
+      "aliases": [
+        "Conv. PAR",
+        "Conventional PAR"
+      ],
+      "categories": [
+        "Color Changer"
+      ],
+      "moving": false,
+      "beamAngle": [
+        25,
+        25
+      ],
+      "lumens": 8000,
+      "lumensEstimated": true,
+      "features": [
+        "dimmer"
+      ],
+      "modes": [
+        {
+          "name": "Dimmer",
+          "shortName": "dim",
+          "channelCount": 1,
+          "channels": [
+            [
+              "Dimmer",
+              "dimmer"
+            ]
+          ]
+        }
+      ],
+      "notes": "Placeholder for the plan's 'Conv. PAR' symbol (audience front/back, merch). The rider names neither lamp nor wattage: replace it with the real PAR once known."
+    }
+  ]
+}
