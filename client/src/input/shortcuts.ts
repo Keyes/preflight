@@ -1,5 +1,5 @@
 import { onBeforeUnmount, onMounted } from 'vue'
-import { useCameraBridge } from '../stores/camera'
+import { useViewer } from '../stores/viewer'
 import { useCrowd } from '../stores/crowd'
 import { useInteraction } from '../stores/interaction'
 import { useLayout } from '../stores/layout'
@@ -19,12 +19,12 @@ export function useShortcuts() {
   const settings = useSettings()
   const interaction = useInteraction()
   const venues = useVenues()
-  const camera = useCameraBridge()
+  const viewer = useViewer()
 
   const run: Record<Command, (event: KeyboardEvent) => void> = {
     view(event) {
       const view = venues.currentViews[Number(event.key) - 1]
-      if (view) camera.api?.goTo({ position: view.position, rotation: view.rotation })
+      if (view) viewer.api?.goTo({ position: view.position, rotation: view.rotation })
     },
     selectAll: () => rig.selectMany(rig.fixtures.map((f) => f.id)),
     // The nearest thing first: an open popover, then what the next click does, then the selection.

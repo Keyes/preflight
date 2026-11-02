@@ -17,7 +17,7 @@ import VenueSidebar from './components/VenueSidebar.vue'
 import VenuesWindow from './components/VenuesWindow.vue'
 import { KEYMAP, keysFor, keysOf } from './input/keymap'
 import { useShortcuts } from './input/shortcuts'
-import { useCameraBridge } from './stores/camera'
+import { useViewer } from './stores/viewer'
 import { useCatalog } from './stores/catalog'
 import { useLayout } from './stores/layout'
 import { useRig } from './stores/rig'
@@ -26,7 +26,7 @@ import { useTransfer } from './stores/transfer'
 import { useVenues } from './stores/venues'
 
 const store = useVenues()
-const camera = useCameraBridge()
+const viewer = useViewer()
 const catalog = useCatalog()
 const rig = useRig()
 const layout = useLayout()
@@ -100,8 +100,8 @@ onMounted(async () => {
     <main class="stage">
       <Viewer :model-url="url" @loading="(v) => ((loading = v), v && (loadError = null))" @error="(m) => (loadError = m)" />
       <div v-if="url" class="toolbar">
-        <button @click="camera.api?.overview()">Overview</button>
-        <button @click="camera.api?.inside()">Inside</button>
+        <button @click="viewer.api?.overview()">Overview</button>
+        <button @click="viewer.api?.inside()">Inside</button>
         <ScreenshotButton />
         <CrowdPanel />
         <HelpPanel />

@@ -4,6 +4,7 @@ import * as api from '../api'
 import { similarityFromPairs, type DraftResult, type Fixture, type FixtureDraft, type FixtureGroup, type RiderFile } from '@preflight/shared'
 import { useCatalog } from './catalog'
 import { useInteraction } from './interaction'
+import { useViewer } from './viewer'
 import { useRig } from './rig'
 import { useVenues } from './venues'
 
@@ -33,6 +34,7 @@ export const useRider = defineStore('rider', () => {
   const rig = useRig()
   const interaction = useInteraction()
   const catalog = useCatalog()
+  const viewer = useViewer()
 
   const open = ref(false)
   const step = ref<RiderStep>('load')
@@ -46,8 +48,6 @@ export const useRider = defineStore('rider', () => {
   const planImage = ref<{ url: string; crop: [number, number, number, number] } | null>(null)
   const planPoints = ref<(Pt | null)[]>([null, null])
   const worldPoints = ref<(Pt | null)[]>([null, null])
-  /** Set by the viewer: the height of the first surface above (x, z), or null where there is none. */
-  const ceilingAt = ref<((x: number, z: number) => number | null) | null>(null)
 
   /** In the plan view, hide the small objects standing on the floor (speaker stacks, truss towers) so the spots under them can be picked. */
   const hideClutter = ref(true)
@@ -349,8 +349,8 @@ export const useRider = defineStore('rider', () => {
       ids.set(d.key, id)
       const placement = d.placement!
       let [x, y, z] = placement.position
-      if (measure.value && placement.height === 'ceiling' && ceilingAt.value) {
-        const hit = ceilingAt.value(x, z)
+      if (measure.value && placement.height === 'ceiling') {
+        const hit = viewer.api?.ceilingAt(x, z) ?? null
         if (hit !== null) y = hit
       }
       const moved = adjust.value[d.key]
@@ -421,7 +421,6 @@ export const useRider = defineStore('rider', () => {
     planImage,
     planPoints,
     worldPoints,
-    ceilingAt,
     similarity,
     calibrating,
     viewTurns,

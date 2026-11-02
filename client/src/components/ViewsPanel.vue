@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { nextTick, ref } from 'vue'
 import type { CameraView } from '@preflight/shared'
-import { useCameraBridge } from '../stores/camera'
+import { useViewer } from '../stores/viewer'
 import { useVenues } from '../stores/venues'
 import ContextMenu from './ContextMenu.vue'
 import type { MenuItem } from './contextMenu'
 import SidebarSection from './SidebarSection.vue'
 
 const store = useVenues()
-const bridge = useCameraBridge()
+const viewer = useViewer()
 
 const menu = ref<{ x: number; y: number; id: string } | null>(null)
 const renamingId = ref<string | null>(null)
@@ -20,7 +20,7 @@ function newId() {
 }
 
 function saveCurrent() {
-  const state = bridge.api?.getState()
+  const state = viewer.api?.getState()
   if (!state) return
   const view: CameraView = { id: newId(), name: `View ${store.currentViews.length + 1}`, ...state }
   store.setViews([...store.currentViews, view])
@@ -28,7 +28,7 @@ function saveCurrent() {
 }
 
 function jump(view: CameraView) {
-  bridge.api?.goTo({ position: view.position, rotation: view.rotation })
+  viewer.api?.goTo({ position: view.position, rotation: view.rotation })
 }
 
 function openMenu(event: MouseEvent, id: string) {
@@ -65,7 +65,7 @@ function commitRename() {
 }
 
 function updateToCurrent(id: string) {
-  const state = bridge.api?.getState()
+  const state = viewer.api?.getState()
   if (state) store.setViews(store.currentViews.map((v) => (v.id === id ? { ...v, ...state } : v)))
 }
 

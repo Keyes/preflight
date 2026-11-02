@@ -20,7 +20,7 @@ import { SelectionGizmo } from '../scene/SelectionGizmo'
 import { mountOnSurface, VenueModel } from '../scene/VenueModel'
 import { insidePose, overviewPose, ViewerCamera, type Bounds } from '../scene/ViewerCamera'
 import { ZoneOutlines } from '../scene/ZoneOutlines'
-import { useCameraBridge } from '../stores/camera'
+import { useViewer } from '../stores/viewer'
 import { useCatalog } from '../stores/catalog'
 import { useCrowd } from '../stores/crowd'
 import { useInteraction } from '../stores/interaction'
@@ -40,7 +40,7 @@ const MAX_LIGHTS = 32
 /** With clustered lighting a surface sees the ambient light, the clustered container and the few lights that cast shadows or project a gobo. */
 const CLUSTERED_MAX_LIGHTS = 4 + MAX_REGULAR_LIGHTS
 
-const bridge = useCameraBridge()
+const viewer = useViewer()
 const settings = useSettings()
 const catalog = useCatalog()
 const stats = useStats()
@@ -124,8 +124,7 @@ onMounted(() => {
   }, 1000)
 
   // what the rest of the app asks of the view
-  riderStore.ceilingAt = (x, z) => model?.surfaceAbove(x, 0.3, z, 40) ?? null // the ceiling's underside, or whatever hangs there
-  bridge.api = {
+  viewer.api = {
     getState: () => walkCamera!.state(),
     goTo: (state) => walkCamera?.goTo(state),
     overview: () => {
@@ -136,6 +135,8 @@ onMounted(() => {
     },
     planShot: (scale) => planShot(engine!, canvas.value!, scale),
     screenshot,
+    ceilingAt: (x, z) => model?.surfaceAbove(x, 0.3, z, 40) ?? null,
+    aim: (fixtures, point, options) => solveAim(fixtureRig?.aimable(fixtures) ?? [], new Vector3(...point), options),
   }
   // for the browser tests and the console
   if (import.meta.env.DEV) {
@@ -211,8 +212,7 @@ function focusCanvas() {
 }
 
 onBeforeUnmount(() => {
-  riderStore.ceilingAt = null
-  bridge.api = null
+  viewer.api = null
   window.removeEventListener('resize', onResize)
   window.removeEventListener('keydown', onShift)
   window.removeEventListener('keyup', onShift)
@@ -486,16 +486,6 @@ watch(
 watch(
   () => catalog.profiles,
   () => fixtureRig?.sync(rig.fixtures, settings.haze),
-)
-watch(
-  () => rig.aim.tick,
-  () => {
-    // the lights that were aimed, pointed at the aim point (again) with the current spread and fan
-    if (!fixtureRig || !rig.aim.anchor) return
-    const fixtures = rig.aim.ids.map((id) => rig.fixtures.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f)
-    const result = solveAim(fixtureRig.aimable(fixtures), new Vector3(...rig.aim.anchor), { spread: rig.aim.spread, fan: rig.aim.fan })
-    rig.applyAim(result.patches, result.unreachable)
-  },
 )
 
 // the selection and what the next click does

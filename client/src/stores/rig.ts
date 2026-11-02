@@ -3,9 +3,9 @@ import { defineStore } from 'pinia'
 import * as api from '../api'
 import type { Fixture, FixtureGroup } from '@preflight/shared'
 import { GENERIC_ID, GENERIC_MOVING_HEAD } from '../domain/profiles'
-import type { AimPatch } from '../scene/aim'
 import type { RotationReadout } from '../scene/SelectionGizmo'
 import { partKey, useAutosave } from './autosave'
+import { useViewer } from './viewer'
 import { useCatalog } from './catalog'
 import { FixtureHistory } from '../domain/fixtureHistory'
 import { useInteraction } from './interaction'
@@ -19,6 +19,7 @@ export const useRig = defineStore('rig', () => {
   const interaction = useInteraction()
   const autosave = useAutosave()
   const catalog = useCatalog()
+  const viewer = useViewer()
   /** The selected fixtures, in the order they were selected. */
   const selectedIds = ref<string[]>([])
   /** The selected fixture when exactly one is selected (what single-light editing works on). */
@@ -398,9 +399,9 @@ export const useRig = defineStore('rig', () => {
 
   // --- aiming ----------------------------------------------------------------------------------
   //
-  // "Aim at point" waits for a click on a surface (the 'aim' click mode), then points the selected lights at it (the viewer
-  // solves pan and tilt, or a new orientation, and hands the result to `applyAim`). The point is kept, so the spread and fan
-  // sliders can re-aim the same lights while it is still their selection.
+  // "Aim at point" waits for a click on a surface (the 'aim' click mode), then points the selected lights at it: the view
+  // works out pan and tilt, or a new orientation, since it knows where the lights are (`viewer.api.aim`). The point is
+  // kept, so the spread and fan sliders can re-aim the same lights while it is still their selection.
 
   const aim = reactive({
     anchor: null as [number, number, number] | null,
@@ -410,8 +411,6 @@ export const useRig = defineStore('rig', () => {
     spread: 0,
     /** degrees between the outermost beams */
     fan: 0,
-    /** bumped to ask the viewer to (re)aim */
-    tick: 0,
     /** lights that could not turn far enough */
     unreachable: [] as string[],
   })
@@ -438,21 +437,26 @@ export const useRig = defineStore('rig', () => {
     interaction.cancel('aim')
     aim.anchor = point
     aim.ids = [...selectedIds.value]
-    aim.tick++
+    reaim()
   }
 
   function setAimSpread(value: number) {
     aim.spread = value
-    if (aimActive.value) aim.tick++
+    if (aimActive.value) reaim()
   }
 
   function setAimFan(value: number) {
     aim.fan = value
-    if (aimActive.value) aim.tick++
+    if (aimActive.value) reaim()
   }
 
-  /** Applies what the viewer worked out as one undo step (repeated slider changes merge). */
-  function applyAim(patches: ReadonlyMap<string, AimPatch>, unreachable: readonly string[]) {
+  /** Points the aimed lights at the aim point (again), with the current spread and fan, as one undo step (repeated slider changes merge). */
+  function reaim() {
+    const point = aim.anchor
+    const lights = aim.ids.map((id) => fixtures.value.find((f) => f.id === id)).filter((f): f is Fixture => !!f)
+    const result = point && viewer.api?.aim(lights, point, { spread: aim.spread, fan: aim.fan })
+    if (!result) return
+    const { patches, unreachable } = result
     touch('Aim', 'aim', [...patches.keys()])
     for (const [id, patch] of patches) {
       const fixture = list().find((f) => f.id === id)
@@ -518,7 +522,6 @@ export const useRig = defineStore('rig', () => {
     aimAt,
     setAimSpread,
     setAimFan,
-    applyAim,
     groups,
     activeGroup,
     groupMembers,

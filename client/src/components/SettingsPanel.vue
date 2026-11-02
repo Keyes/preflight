@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import { computed } from 'vue'
-import { useCameraBridge } from '../stores/camera'
+import { useViewer } from '../stores/viewer'
 import {
   EXPOSURE_MAX,
   EXPOSURE_MIN,
@@ -20,7 +20,7 @@ import { useLayout } from '../stores/layout'
 import SidebarSection from './SidebarSection.vue'
 
 const settings = useSettings()
-const bridge = useCameraBridge()
+const viewer = useViewer()
 
 const TONE_LABELS = { off: 'Off (clips)', neutral: 'Neutral (hue-true)', aces: 'ACES (filmic)' } as const
 
@@ -37,7 +37,7 @@ const FRACTION_TEXT: [number, string][] = [
 /** A render size as a fraction of the display's native resolution, with its pixel size when known: "1/2 · 764 × 384 px". */
 function sizeLabel(fraction: number) {
   const text = FRACTION_TEXT.find(([value]) => Math.abs(value - fraction) < 1e-6)?.[1] ?? fraction.toFixed(2)
-  const native = bridge.api?.planShot(1)
+  const native = viewer.api?.planShot(1)
   const pixels = native ? ` · ${Math.round(native.width * fraction)} × ${Math.round(native.height * fraction)} px` : ''
   return `${text}${fraction === 1 ? ' (native)' : ''}${pixels}`
 }
@@ -46,7 +46,7 @@ const exposureLabel = computed(() => `${settings.exposure > 0 ? '+' : ''}${setti
 
 /** Pixel size label for a screenshot scale, e.g. "2× · 3056 × 3072 px". */
 function shotLabel(scale: number) {
-  const size = bridge.api?.planShot(scale)
+  const size = viewer.api?.planShot(scale)
   return size ? `${scale}× · ${size.width} × ${size.height} px` : `${scale}×`
 }
 const layout = useLayout()

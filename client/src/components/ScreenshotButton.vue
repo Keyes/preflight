@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useCameraBridge } from '../stores/camera'
+import { useViewer } from '../stores/viewer'
 import { useSettings } from '../stores/settings'
 import { useVenues } from '../stores/venues'
 
-const bridge = useCameraBridge()
+const viewer = useViewer()
 const settings = useSettings()
 const venues = useVenues()
 
@@ -26,12 +26,12 @@ const slug = (text: string) =>
     .replace(/^_+|_+$/g, '') || 'preflight'
 
 async function shoot() {
-  if (busy.value || !bridge.api) return
+  if (busy.value || !viewer.api) return
   busy.value = true
   try {
     // Let the busy state paint before the GPU work blocks the main thread for a moment.
     await new Promise((resolve) => requestAnimationFrame(() => resolve(null)))
-    const { blob, width, height } = await bridge.api.screenshot(settings.screenshotScale)
+    const { blob, width, height } = await viewer.api.screenshot(settings.screenshotScale)
     downloadBlob(blob, `${slug(venues.current?.name ?? '')}-${stamp()}.png`)
     say(`Saved ${width} × ${height} px`)
   } catch (e) {
