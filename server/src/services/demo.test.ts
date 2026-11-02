@@ -15,7 +15,7 @@ const { catalogFixtures } = await import('./catalog.js')
 
 after(() => rm(dir, { recursive: true, force: true }))
 
-const samples = fileURLToPath(new URL('../../samples/', import.meta.url))
+const samples = fileURLToPath(new URL('../../../samples/', import.meta.url))
 
 test('the demo venue opens with its model, lights, groups, haze, crowd and views', async () => {
   const venue = await createDemoVenue()

@@ -1,10 +1,19 @@
 import type { Atmosphere, CameraView, CatalogFile, Crowd, CrowdZone, DraftResult, Fixture, FixtureGroup, RiderFile, Similarity, Venue } from '@preflight/shared'
 
+/** What the server, or the dev proxy in front of it, answers with when a request fails. */
+interface Failure {
+  error?: string
+  message?: string
+}
+
+/** A response's JSON ({} when it has none). The server is ours: what it sends is taken to have the shape its route promises. */
+const jsonOf = async <T>(res: Response) => (await res.json().catch(() => ({}))) as T
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`/api${path}`, init)
-  const body = await res.json().catch(() => ({}))
+  const body = await jsonOf<T & Failure>(res)
   if (!res.ok) throw new Error(body.error ?? body.message ?? `request failed (${res.status})`)
-  return body as T
+  return body
 }
 
 export async function deleteVenue(id: string): Promise<void> {
@@ -95,7 +104,7 @@ export const MODEL_ACCEPT = '.skp,.glb,.gltf'
 /** Uploads a model (.skp, which the server converts, or .glb / self-contained .gltf) and returns the updated venue. */
 export async function uploadModel(id: string, file: File): Promise<Venue> {
   const res = await fetch(`/api/venues/${id}/model`, { method: 'POST', body: file })
-  const body = await res.json().catch(() => ({}))
+  const body = await jsonOf<Partial<Venue> & Failure>(res)
   // 422 still carries the venue record with status "error" and a reason.
   if (!res.ok && !body.id) throw new Error(body.error ?? `upload failed (${res.status})`)
   return body as Venue
@@ -112,9 +121,9 @@ const json = (body: unknown): RequestInit => ({ headers: { 'content-type': 'appl
 export async function getRider(venueId: string): Promise<RiderFile | null> {
   const res = await fetch(`/api/venues/${venueId}/rider`)
   if (res.status === 404) return null
-  const body = await res.json().catch(() => ({}))
+  const body = await jsonOf<RiderFile & Failure>(res)
   if (!res.ok) throw new Error(body.error ?? `request failed (${res.status})`)
-  return body as RiderFile
+  return body
 }
 
 /** Sends the rider PDF; the server keeps it and reads its patch table. */
@@ -134,7 +143,7 @@ export const readRiderPlan = (venueId: string, options: { provider?: string; mod
 /** The plan picture and the part of the page it shows (plan pixels: x0, y0, x1, y1). */
 export async function riderPlanImage(venueId: string): Promise<{ url: string; crop: [number, number, number, number] }> {
   const res = await fetch(`/api/venues/${venueId}/rider/plan.png`)
-  if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error ?? `request failed (${res.status})`)
+  if (!res.ok) throw new Error((await jsonOf<Failure>(res)).error ?? `request failed (${res.status})`)
   const crop = (res.headers.get('x-crop') ?? '').split(',').map(Number)
   if (crop.length !== 4 || crop.some((n) => !Number.isFinite(n))) throw new Error('the plan picture came without its position')
   return { url: URL.createObjectURL(await res.blob()), crop: crop as [number, number, number, number] }

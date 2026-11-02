@@ -9,7 +9,7 @@ import { createVenue, deleteVenue, glbPath, updateVenue } from './venues.js'
 export type DemoPreset = Required<Pick<Venue, 'name' | 'atmosphere' | 'crowd' | 'views' | 'fixtures' | 'groups'>>
 
 /** where the demo venue's files are; DEMO_DIR points it elsewhere */
-const SAMPLES_DIR = process.env.DEMO_DIR ?? fileURLToPath(new URL('../../samples/', import.meta.url))
+const SAMPLES_DIR = process.env.DEMO_DIR ?? fileURLToPath(new URL('../../../samples/', import.meta.url))
 
 /** Creates a new venue from the demo club: its model, lights, groups, haze, crowd and views. */
 export async function createDemoVenue(): Promise<Venue> {

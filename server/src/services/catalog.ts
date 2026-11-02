@@ -2,8 +2,8 @@ import { readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import type { CatalogFile, CatalogFixture } from '@preflight/shared'
 
-const CATALOG_FILE = fileURLToPath(new URL('../catalog/fixtures.json', import.meta.url))
-const CUSTOM_FILE = fileURLToPath(new URL('../catalog/custom.json', import.meta.url))
+const CATALOG_FILE = fileURLToPath(new URL('../../catalog/fixtures.json', import.meta.url))
+const CUSTOM_FILE = fileURLToPath(new URL('../../catalog/custom.json', import.meta.url))
 
 let cached: Promise<string> | undefined
 

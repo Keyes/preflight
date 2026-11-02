@@ -35,19 +35,6 @@ export default defineConfig(
       'vue/multi-word-component-names': ['error', { ignores: ['Viewer'] }],
     },
   },
-  {
-    // Request bodies and responses are untyped JSON, and these files read them field by field. Until they are checked
-    // against schemas (see "The server's index.ts does three jobs" in docs/architecture.md), the rules about untyped values
-    // are off here only.
-    files: ['server/src/index.ts', 'server/src/rider/api.ts', 'client/src/api.ts'],
-    rules: {
-      '@typescript-eslint/no-unsafe-argument': 'off',
-      '@typescript-eslint/no-unsafe-assignment': 'off',
-      '@typescript-eslint/no-unsafe-call': 'off',
-      '@typescript-eslint/no-unsafe-member-access': 'off',
-      '@typescript-eslint/no-unsafe-return': 'off',
-    },
-  },
   { files: ['client/**'], languageOptions: { globals: globals.browser } },
   { files: ['server/**', 'shared/**', '*.js'], languageOptions: { globals: globals.node } },
   // browser tests run in Node, and hand some functions to the page

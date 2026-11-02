@@ -1,3 +1,4 @@
+import * as z from 'zod'
 import type { FixturePatch } from './venue.js'
 
 /**
@@ -90,6 +91,29 @@ export interface RiderFile {
   /** the same for the plan, and where plan and patch disagree: set when the plan is read, replaced when it is read again */
   planIssues?: string[]
 }
+
+/** Notes in a rider file: the strings kept, at most 500. */
+const notes = z.unknown().transform((list) => (Array.isArray(list) ? list.filter((i): i is string => typeof i === 'string').slice(0, 500) : []))
+
+/**
+ * A rider file sent by the client (made by `read-rider`, or edited by hand): checked for shape and size, not for sense. The
+ * parts the import reads to make lights are checked; the rest is kept as it was sent.
+ */
+export const riderFileSchema = z
+  .looseObject({
+    version: z.literal(1),
+    patch: z.looseObject({
+      rows: z.array(z.looseObject({ fixId: z.string(), name: z.string(), mode: z.string(), truss: z.string(), universe: z.int(), address: z.int() })).max(600),
+    }),
+    lamps: z
+      .array(z.looseObject({ lampId: z.string(), fixId: z.string(), planPx: z.tuple([z.number(), z.number()]) }))
+      .max(1000)
+      .optional(),
+    plan: z.looseObject({ trusses: z.record(z.string(), z.unknown()) }).optional(),
+    issues: notes,
+    planIssues: notes.optional(),
+  })
+  .transform((file) => file as unknown as RiderFile)
 
 /** The lights a rider describes, as drafts the import wizard shows for review (made by buildDrafts on the server). */
 export type DraftStatus = 'ready' | 'unmapped' | 'unplaced' | 'ignored'

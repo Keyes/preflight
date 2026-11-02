@@ -5,7 +5,7 @@ import { promisify } from 'node:util'
 
 const run = promisify(execFile)
 
-const CONVERTER = fileURLToPath(new URL(`../../converter/build/skp2glb${process.platform === 'win32' ? '.exe' : ''}`, import.meta.url))
+const CONVERTER = fileURLToPath(new URL(`../../../converter/build/skp2glb${process.platform === 'win32' ? '.exe' : ''}`, import.meta.url))
 
 /**
  * Identifies the built converter (size and modification time of the binary), so models converted by an

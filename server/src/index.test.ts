@@ -149,6 +149,9 @@ test('checks every light, normalizes its rotation, and drops group members that 
   ]
   for (const fixture of bad) assert.equal((await call('PUT', `/venues/${id}/fixtures`, { fixtures: [fixture] })).status, 400, JSON.stringify(fixture))
   assert.equal((await call('PUT', `/venues/${id}/fixtures`, { fixtures: [light('a'), light('a')] })).status, 400)
+  // the answer says where the problem is
+  const where = await call('PUT', `/venues/${id}/fixtures`, { fixtures: [light('a'), light('b', { position: [0, 'up', 0] })] })
+  assert.match(where.body.error, /^fixtures\.1\.position\.1: /)
 
   const saved = await call<Venue>('PUT', `/venues/${id}/fixtures`, {
     fixtures: [light('a', { rotation: [0, 0, 0, 2], patch: { fixId: '#1', universe: 1, address: 1, truss: 'LX1' } }), light('b')],
@@ -245,12 +248,16 @@ test('takes only a PDF as the rider', async () => {
   const notPdf = await call('POST', `/venues/${id}/rider`, 'plain text, not a PDF')
   assert.equal(notPdf.status, 400)
   assert.match(notPdf.body.error, /not a PDF/)
+  const tooShort = await call('POST', `/venues/${id}/rider`, '%P')
+  assert.equal(tooShort.status, 400)
+  assert.match(tooShort.body.error, /not a PDF/)
 })
 
-test('answers 404 for a venue or a path that does not exist', async () => {
+test('answers 404 for a venue or a path that does not exist, and 405 for a method a path does not take', async () => {
   const missing = '00000000-0000-4000-8000-000000000000'
   assert.equal((await call('GET', `/venues/${missing}`)).status, 404)
   assert.equal((await call('GET', `/venues/${missing}/rider`)).status, 404)
   assert.equal((await call('GET', '/venues/not-an-id/rider')).status, 404)
   assert.equal((await call('GET', '/nothing')).status, 404)
+  assert.equal((await call('PUT', `/venues/${missing}/model.glb`)).status, 405)
 })

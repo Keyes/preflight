@@ -5,7 +5,7 @@ import { join } from 'node:path'
 import type { Venue } from '@preflight/shared'
 
 /** where venues are stored; VENUES_DIR points it elsewhere (the tests use a scratch folder) */
-export const DATA_DIR = process.env.VENUES_DIR ?? fileURLToPath(new URL('../data/venues/', import.meta.url))
+export const DATA_DIR = process.env.VENUES_DIR ?? fileURLToPath(new URL('../../data/venues/', import.meta.url))
 const ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
 export const isValidId = (id: string) => ID_PATTERN.test(id)
