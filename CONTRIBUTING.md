@@ -22,7 +22,7 @@ Run the checks that CI runs (formatting, lint, unused code, types, tests and the
 npm run check
 ```
 
-`npm run format` fixes the formatting, and `npx eslint . --fix` fixes the lint findings that have an automatic fix. For a change to the client, also run the browser smoke test, `npm run test:e2e` (the first time, `npx playwright install chromium` downloads the browser). Then try the change in the running app (`npm run dev`), especially anything that renders.
+`npm run format` fixes the formatting, and `npx eslint . --fix` fixes the lint findings that have an automatic fix. For a change to the client, also run the browser tests, `npm run test:e2e` (the first time, `npx playwright install chromium` downloads the browser). Then try the change in the running app (`npm run dev`), especially anything that renders.
 
 What the checks enforce, and what a review looks at beyond them, is in [docs/engineering.md](docs/engineering.md).
 

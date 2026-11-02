@@ -26,7 +26,7 @@ Comments and names follow CONTRIBUTING: read like the code around it, and commen
 
 ## TypeScript
 
-- `strict` is on in both workspaces, plus `noImplicitOverride`, `noImplicitReturns` and `noFallthroughCasesInSwitch`. `noUncheckedIndexedAccess` is the next to turn on: it finds about 260 places today, most of them in `Viewer.vue`, `scene/Crowd.ts` and the rider patch reader (`server/src/rider/patch.ts`), so it comes with their refactoring.
+- `strict` is on in both workspaces, plus `noImplicitOverride`, `noImplicitReturns` and `noFallthroughCasesInSwitch`. `noUncheckedIndexedAccess` is the next to turn on: it finds about 270 places today, most of them array maths in `scene/planClutter.ts` and `scene/Crowd.ts` and the rider patch reader (`server/src/rider/patch.ts`), so it comes with their next change.
 - No `any`. Data from outside starts as `unknown` and is narrowed by the code that checks it.
 - A non-null assertion (`!`) or a cast (`as`) needs a reason the compiler cannot see, and a comment when the reason is not obvious from the next line.
 - What the client and the server exchange is declared once, in `shared/` (`@preflight/shared`), together with maths both sides run. Nothing there may import Node, the DOM, Vue or Babylon (see [architecture.md](architecture.md#shared-code)).
@@ -35,7 +35,8 @@ Comments and names follow CONTRIBUTING: read like the code around it, and commen
 
 - Pure logic gets unit tests next to the code it tests (`*.test.ts`): maths, parsing, mapping, undo, checks of request bodies. The server's and `shared/`'s run on `node:test`, the client's on Vitest.
 - Server routes are tested over HTTP (`server/src/index.test.ts`): the tests start the server in its own process, with its venues in a temporary folder.
-- Rendering is covered by a browser smoke test (`e2e/smoke.spec.ts`, Playwright) that opens the demo club, checks the view shows more than one flat color, and fails on any console error. Whether the picture looks right is checked by eye in the running app, as CONTRIBUTING says.
+- The 3D view is covered by browser tests (`e2e/`, Playwright). The smoke test opens the demo club and checks the view shows more than one flat color; the others drive the view as a person does (a click on a point of the room is aimed by projecting that point onto the screen) and check the result in the stores and the scene. Every one fails on a console error. Whether the picture looks right is checked by eye in the running app, as CONTRIBUTING says.
+- A scene controller's maths are plain functions beside it, tested without Babylon. The controller itself can be tested on Babylon's `NullEngine`, which runs a scene without a GPU; a drag is played by notifying the gizmo's observables (see `scene/SelectionGizmo.test.ts`).
 - A test name is a sentence that says what should happen ("refuses a model that is empty, …").
 - Test data is made up. Never commit a real venue, rider or patch.
 
@@ -66,7 +67,7 @@ Formatting, unused code and anything the tools below catch are not review commen
 | Unused code | `npm run knip` | Unused files, dependencies, and exports that nothing outside their own file uses (`knip.json`). |
 | Types | `npm run typecheck -w shared`, `npm run typecheck -w server`, `npx tsc --noEmit -p e2e`, `npm run build -w client` | `tsc` and `vue-tsc` with the settings above. |
 | Tests | `npm test -w shared`, `npm test -w server`, `npm test -w client` | The unit tests and the server's route tests. |
-| Browser | `npm run test:e2e` | The smoke test in a headless Chromium. It starts its own server and client on ports 3199 and 5199, with an empty scratch data folder. The first time, install the browser with `npx playwright install chromium`. |
+| Browser | `npm run test:e2e` | The browser tests in a headless Chromium, one at a time (about two minutes). They start their own server and client on ports 3199 and 5199, with a scratch data folder; each test makes its own demo club. The first time, install the browser with `npx playwright install chromium`. |
 
 `npm run check` runs all of them except the browser test, in the order CI does; CI runs the browser test as a job of its own.
 

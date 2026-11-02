@@ -93,7 +93,7 @@ npm test -w client
 npm run test:e2e
 ```
 
-The first three are unit tests; the server's include its routes, tested over HTTP. `test:e2e` opens the demo club in a headless Chromium and fails if it renders nothing or logs an error; it starts its own server and client on ports 3199 and 5199, with an empty scratch data folder, so your venues are never touched. Install the browser once with `npx playwright install chromium`.
+The first three are unit tests; the server's include its routes, tested over HTTP. `test:e2e` opens the demo club in a headless Chromium, checks that it renders, and uses the view as a person would (moving the camera, selecting and aiming lights, placing one, drawing a crowd zone, the rider wizard's plan view); it fails on any error the page logs. It starts its own server and client on ports 3199 and 5199, with a scratch data folder, so your venues are never touched. Install the browser once with `npx playwright install chromium`.
 
 `npm run check` runs everything CI runs except the browser test: formatting, lint, unused code, type checks, unit tests and the client build.
 
@@ -149,7 +149,7 @@ Trimble doesn't publish the SketchUp SDK for Linux, so the converter can't be bu
 
 ## How it is put together
 
-- `client/`: Vue 3, Vite, TypeScript, Pinia and Babylon.js. The 3D code is in `client/src/scene/` (fixture rig, beam shader, adaptive quality, screenshots); state is in `client/src/stores/`.
+- `client/`: Vue 3, Vite, TypeScript, Pinia and Babylon.js. The 3D code is in `client/src/scene/`, one controller per job (fixture rig, crowd, camera, venue model, look, gizmo, rider plan view and markers) beside the beam shader, adaptive quality and screenshots; `components/Viewer.vue` connects them to the state in `client/src/stores/`.
 - `server/`: Node with a REST API and a WebSocket (reserved for live DMX later). It stores venues, checks uploaded glTF models, runs the converter for SketchUp files and serves the fixture catalog. The rider import is in `server/src/rider/`.
 - `server/catalog/`: a snapshot of the fixture catalog from the [Open Fixture Library](https://open-fixture-library.org) (about 640 fixtures, with the library's MIT license next to it), plus `custom.json` for fixtures that aren't in the library yet. To refresh it: `npm run import-fixtures -w server -- --download` (clones only the library's `fixtures/` folder into a temp folder and rebuilds the catalog), or pass the path of an existing checkout instead of `--download`, then restart the server.
 - `shared/`: the types the client and the server exchange, and the plan-to-venue maths both use (the workspace `@preflight/shared`, plain TypeScript without a build step).
