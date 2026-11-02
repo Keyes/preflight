@@ -148,6 +148,7 @@ Trimble doesn't publish the SketchUp SDK for Linux, so the converter can't be bu
 - `converter/`: the native SketchUp-to-GLB program (see [converter/README.md](converter/README.md)). Only needed for SketchUp files.
 - `samples/`: the demo club (`demo-club.glb` and `demo-club.json`), made by `npm run demo-venue -w server` from `server/src/tools/demoVenue.ts`. The model is original and covered by the project's license.
 - `docs/roadmap.md`: what is planned.
+- `docs/architecture.md`: how the parts fit together, which way dependencies point, and the known problems in the structure.
 
 Data lives in `server/data/venues/<id>/` (git-ignored): `venue.json` (name, order, saved views, fixtures) and `model.glb`, the model the viewer loads: a glTF upload as it was uploaded, or a SketchUp upload converted (then the uploaded `model.skp` is kept next to it). Uploading an identical SketchUp file again skips the conversion, unless the converter has been rebuilt since (then it converts again, so a better converter reaches existing venues when you re-upload their file). Fixture parameters are stored as normalized values from 0 to 1, like DMX channels, which keeps the door open for live DMX input.
 

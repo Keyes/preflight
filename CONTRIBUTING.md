@@ -12,6 +12,8 @@ Results from **Windows and Linux** are especially useful, since only macOS has b
 
 Follow [Getting started](README.md#getting-started) in the README. You can work on most of the client and server without the SketchUp SDK; you only need it to import venues or to work on `converter/`.
 
+[docs/architecture.md](docs/architecture.md) shows how the client and server are put together and which way dependencies should point. Read it before a change that moves code between layers, and update it when your change moves a boundary.
+
 ## Before you open a pull request
 
 Run the checks that CI runs:
