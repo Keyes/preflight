@@ -9,18 +9,11 @@ import {
   GizmoManager,
   HemisphericLight,
   ImageProcessingConfiguration,
-  Mesh,
-  MeshBuilder,
   PointerEventTypes,
-  PositionGizmo,
   Scene,
-  StandardMaterial,
   Texture,
-  TransformNode,
   UniversalCamera,
-  UtilityLayerRenderer,
   Vector3,
-  type AbstractMesh,
 } from '@babylonjs/core'
 import { profilesVersion } from '../fixtures/profiles'
 import { CAMERA_KEYS } from '../input/keymap'
@@ -30,6 +23,7 @@ import { Crowd as CrowdScene } from '../scene/Crowd'
 import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
 import { QualityGovernor } from '../scene/quality'
 import { SelectionGizmo } from '../scene/SelectionGizmo'
+import { RiderMarkers } from '../scene/RiderMarkers'
 import { RiderPlanView } from '../scene/RiderPlanView'
 import { mountOnSurface, VenueModel } from '../scene/VenueModel'
 import { insidePose, overviewPose, ViewerCamera, type Bounds } from '../scene/ViewerCamera'
@@ -72,6 +66,7 @@ let camera: UniversalCamera | undefined
 let ambient: HemisphericLight | undefined
 let model: VenueModel | undefined
 let planView: RiderPlanView | undefined
+let riderMarkers: RiderMarkers | undefined
 let fixtureRig: FixtureRig | undefined
 let crowdScene: CrowdScene | undefined
 let aimCursor: AimCursor | undefined
@@ -153,6 +148,7 @@ onMounted(() => {
   camera = walkCamera.camera
   model = new VenueModel(scene, camera)
   planView = new RiderPlanView(walkCamera, model)
+  riderMarkers = new RiderMarkers(scene, (delta) => riderStore.nudge(delta))
   canvas.value!.addEventListener('pointerleave', () => aimCursor?.hide())
 
   quality = new QualityGovernor(engine, scene, camera)
@@ -358,79 +354,27 @@ watch(
   () => planView?.turn(),
 )
 
-/** One small sphere for each light the wizard would add, keyed by its draft: picked to select it, moved with the gizmo. */
-const riderMarkers = new Map<string, Mesh>()
-let riderRefMarkers: Mesh[] = []
-const riderMaterials = new Map<string, StandardMaterial>()
-
-function riderMaterial(name: string, color: Color3): StandardMaterial {
-  let material = riderMaterials.get(name)
-  if (!material && scene) {
-    material = new StandardMaterial(`rider-${name}`, scene)
-    material.disableLighting = true
-    material.emissiveColor = color
-    riderMaterials.set(name, material)
-  }
-  return material!
+/** The lights the wizard would add, as markers in the venue, from the step it is on. */
+function updateRiderPreview() {
+  const showing = riderStore.open && riderStore.step !== 'load'
+  const drafts = showing ? (riderStore.result?.drafts ?? []).filter((d) => d.placement && !riderStore.excluded.has(d.key)) : []
+  riderMarkers?.show({
+    lights: drafts.map((d) => ({ key: d.key, position: riderStore.positionOf(d), onTruss: d.placement!.height === 'truss' })),
+    selected: riderStore.selectedKeys,
+    references: riderStore.open ? riderStore.worldPoints : [],
+    editable: riderStore.open && riderStore.step === 'review',
+  })
 }
+watch(
+  () => [riderStore.open, riderStore.step, riderStore.result, riderStore.worldPoints, riderStore.excluded, riderStore.adjust, riderStore.selectedKeys],
+  updateRiderPreview,
+  { deep: true },
+)
 
-// the move gizmo: on a pivot at the middle of the selected lights, so that moving it moves them all
-let markerUtility: UtilityLayerRenderer | undefined
-let markerGizmo: PositionGizmo | undefined
-let markerPivot: TransformNode | undefined
-let markerDragging = false
-const pivotLast = new Vector3()
-
-function ensureMarkerGizmo() {
-  if (!scene || markerGizmo) return
-  markerUtility = new UtilityLayerRenderer(scene)
-  markerPivot = new TransformNode('rider-pivot', scene)
-  markerGizmo = new PositionGizmo(markerUtility)
-  markerGizmo.updateGizmoRotationToMatchAttachedMesh = false // world axes
-  const axes = [markerGizmo.xGizmo, markerGizmo.yGizmo, markerGizmo.zGizmo, markerGizmo.xPlaneGizmo, markerGizmo.yPlaneGizmo, markerGizmo.zPlaneGizmo]
-  for (const axis of axes) {
-    axis.dragBehavior.onDragStartObservable.add(() => {
-      markerDragging = true
-    })
-    axis.dragBehavior.onDragObservable.add(() => {
-      if (!markerPivot) return
-      const d = markerPivot.position.subtract(pivotLast)
-      pivotLast.copyFrom(markerPivot.position)
-      riderStore.nudge([d.x, d.y, d.z])
-    })
-    axis.dragBehavior.onDragEndObservable.add(() => {
-      markerDragging = false
-      syncMarkerGizmo()
-    })
-  }
-}
-
-function syncMarkerGizmo() {
-  const keys = riderStore.selectedKeys.filter((k) => riderMarkers.has(k))
-  if (keys.length === 0 || !riderStore.open || riderStore.step !== 'review') {
-    if (markerGizmo) markerGizmo.attachedNode = null
-    return
-  }
-  ensureMarkerGizmo()
-  if (!markerGizmo || !markerPivot) return
-  if (!markerDragging) {
-    const centroid = Vector3.Zero()
-    for (const k of keys) centroid.addInPlace(riderMarkers.get(k)!.position)
-    centroid.scaleInPlace(1 / keys.length)
-    markerPivot.position.copyFrom(centroid)
-    pivotLast.copyFrom(centroid)
-  }
-  markerGizmo.attachedNode = markerPivot
-}
-
-/** The draft a rider marker stands for (set in `updateRiderPreview`); undefined for any other mesh. */
-const riderKeyOf = (mesh: AbstractMesh | null | undefined) => (mesh?.metadata as { riderKey?: string } | null | undefined)?.riderKey
-
-/** A click in the review: a light's sphere selects it (Ctrl, Shift or Cmd adds), a click on nothing clears the selection. Returns true when it was for the wizard. */
+/** A click in the review: a light's marker selects it (Ctrl, Shift or Cmd adds), a click on nothing clears the selection. Returns true when it was for the wizard. */
 function riderMarkerClick(add: boolean): boolean {
-  if (!scene || !riderStore.open || riderStore.step !== 'review' || markerDragging) return false
-  const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => !!riderKeyOf(mesh))
-  const key = hit?.hit ? riderKeyOf(hit.pickedMesh) : undefined
+  if (!riderMarkers || !riderStore.open || riderStore.step !== 'review' || riderMarkers.dragging) return false
+  const key = riderMarkers.keyUnderPointer()
   if (key) {
     if (add) riderStore.toggleSelected(key)
     else riderStore.select([key])
@@ -439,56 +383,6 @@ function riderMarkerClick(add: boolean): boolean {
   if (!add && riderStore.selectedKeys.length) riderStore.select([])
   return false
 }
-
-/** Small spheres at the lights the wizard would add (green: on a truss, amber: height assumed, white: selected, blue: reference points picked). */
-function updateRiderPreview() {
-  for (const marker of riderRefMarkers) marker.dispose()
-  riderRefMarkers = []
-  const drafts =
-    riderStore.open && riderStore.step !== 'load' ? (riderStore.result?.drafts ?? []).filter((d) => d.placement && !riderStore.excluded.has(d.key)) : []
-  const wanted = new Set(drafts.map((d) => d.key))
-  for (const [key, marker] of riderMarkers) {
-    if (!wanted.has(key)) {
-      marker.dispose()
-      riderMarkers.delete(key)
-    }
-  }
-  if (!scene) return
-  for (const d of drafts) {
-    let marker = riderMarkers.get(d.key)
-    if (!marker) {
-      marker = MeshBuilder.CreateSphere('rider-marker', { diameter: 0.2, segments: 8 }, scene)
-      marker.metadata = { riderKey: d.key }
-      riderMarkers.set(d.key, marker)
-    }
-    const [x, y, z] = riderStore.positionOf(d)
-    marker.position.set(x, y, z)
-    const selected = riderStore.selectedKeys.includes(d.key)
-    marker.material = selected
-      ? riderMaterial('selected', new Color3(1, 1, 1))
-      : d.placement!.height === 'truss'
-        ? riderMaterial('ok', new Color3(0.3, 0.9, 0.5))
-        : riderMaterial('assumed', new Color3(1, 0.7, 0.2))
-    marker.scaling.setAll(selected ? 1.5 : 1)
-    marker.isPickable = riderStore.step === 'review'
-  }
-  if (riderStore.open) {
-    for (const w of riderStore.worldPoints) {
-      if (!w) continue
-      const sphere = MeshBuilder.CreateSphere('rider-ref', { diameter: 0.35, segments: 8 }, scene)
-      sphere.position.set(w[0], 0.05, w[1])
-      sphere.material = riderMaterial('ref', new Color3(0.4, 0.6, 1))
-      sphere.isPickable = false
-      riderRefMarkers.push(sphere)
-    }
-  }
-  syncMarkerGizmo()
-}
-watch(
-  () => [riderStore.open, riderStore.step, riderStore.result, riderStore.worldPoints, riderStore.excluded, riderStore.adjust, riderStore.selectedKeys],
-  updateRiderPreview,
-  { deep: true },
-)
 
 // --- crowd zone rectangles: the one being drawn, and the outline of the selected zone -----------------
 
@@ -720,12 +614,9 @@ function focusCanvas() {
 }
 
 onBeforeUnmount(() => {
-  markerGizmo?.dispose()
-  markerUtility?.dispose()
-  for (const marker of riderMarkers.values()) marker.dispose()
+  riderMarkers?.dispose()
   planView?.leave()
   riderStore.ceilingAt = null
-  for (const marker of riderRefMarkers) marker.dispose()
   bridge.api = null
   window.removeEventListener('resize', onResize)
   resizeObserver?.disconnect()
