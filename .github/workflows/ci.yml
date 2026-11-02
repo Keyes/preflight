@@ -28,9 +28,25 @@ jobs:
         run: npm run lint
       - name: Look for unused files, exports and dependencies
         run: npm run knip
-      - name: Type-check the server
-        run: npm run typecheck -w server
+      - name: Type-check the server and the browser tests
+        run: npm run typecheck -w server && npx tsc --noEmit -p e2e
       - name: Test the server
         run: npm test -w server
+      - name: Test the client
+        run: npm test -w client
       - name: Type-check and build the client
         run: npm run build -w client
+
+  e2e:
+    # Opens the demo club in a headless Chromium, which renders in software.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Open the demo club in a browser
+        run: npm run test:e2e

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "start": "tsx src/index.ts",
     "import-fixtures": "tsx src/tools/importOfl.ts",
     "demo-venue": "tsx src/tools/demoVenue.ts",
     "parse-rider": "tsx src/tools/parseRider.ts",

@@ -12,3 +12,5 @@ server/data
 venues/
 *.skp
 *.skb
+test-results/
+playwright-report/
