@@ -4,24 +4,13 @@ import * as api from '../api'
 import type { Fixture, FixtureGroup } from '@preflight/shared'
 import { GENERIC_ID, GENERIC_MOVING_HEAD, profileFor } from '../fixtures/profiles'
 import type { AimPatch } from '../scene/aim'
+import type { RotationReadout } from '../scene/SelectionGizmo'
 import { FixtureHistory } from './fixtureHistory'
 import { useInteraction } from './interaction'
 import { useLayout } from './layout'
 import { useVenues } from './venues'
 
 const SAVE_DELAY_MS = 400
-
-export interface RotationReadout {
-  /** world axis the light is being turned around */
-  axis: 'x' | 'y' | 'z'
-  /** rotation since the drag started, right-hand rule about the positive axis */
-  degrees: number
-  /** whether Shift snapping is active */
-  snapping: boolean
-  /** pointer position in the 3D view, CSS pixels */
-  x: number
-  y: number
-}
 
 /** The lights placed in the current venue, with their selection, undo, aiming and placing. */
 export const useRig = defineStore('rig', () => {

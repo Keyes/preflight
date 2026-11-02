@@ -28,7 +28,6 @@ import {
   UniversalCamera,
   UtilityLayerRenderer,
   Vector3,
-  type LinesMesh,
   type PickingInfo,
   type AbstractMesh,
   type Node,
@@ -37,11 +36,14 @@ import '@babylonjs/loaders/glTF'
 import { profilesVersion } from '../fixtures/profiles'
 import { CAMERA_KEYS } from '../input/keymap'
 import { solveAim } from '../scene/aim'
+import { AimCursor } from '../scene/AimCursor'
 import { Crowd as CrowdScene } from '../scene/Crowd'
 import { clutterCut, triangleIndices } from '../scene/planClutter'
 import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
 import { QualityGovernor } from '../scene/quality'
+import { SelectionGizmo } from '../scene/SelectionGizmo'
 import { captureCanvas, planShot, SHOT_ASPECT } from '../scene/screenshot'
+import { ZoneOutlines } from '../scene/ZoneOutlines'
 import { useCameraBridge, type CameraState } from '../stores/camera'
 import { crowdAbsorbers } from '../crowdModel'
 import { useCrowd } from '../stores/crowd'
@@ -55,10 +57,6 @@ import { useVenues } from '../stores/venues'
 
 const props = defineProps<{ modelUrl?: string }>()
 const emit = defineEmits<{ (e: 'loading', value: boolean): void; (e: 'error', message: string): void }>()
-
-/** Rotation snaps to multiples of this many degrees (measured from where the drag started) while Shift is held. */
-const SNAP_DEGREES = 5
-const SNAP_STEP = (SNAP_DEGREES * Math.PI) / 180
 
 /** Anisotropic filtering level for venue textures (the GPU's own limit applies if it is lower). */
 const MAX_ANISOTROPY = 16
@@ -92,13 +90,9 @@ let tween: Observer<Scene> | null = null
 let fast = false
 let fixtureRig: FixtureRig | undefined
 let crowdScene: CrowdScene | undefined
-let gizmo: GizmoManager | undefined
-/** With several lights selected the gizmo sits on this invisible node at their centre: dragging it moves or turns them all. */
-let pivot: TransformNode | undefined
-let groupStart: {
-  pivot: Vector3
-  items: { id: string; root: TransformNode; position: Vector3; rotation: Quaternion }[]
-} | null = null
+let aimCursor: AimCursor | undefined
+let zoneOutlines: ZoneOutlines | undefined
+let selection: SelectionGizmo | undefined
 let quality: QualityGovernor | undefined
 let pipeline: DefaultRenderingPipeline | undefined
 let depthRenderer: DepthRenderer | undefined
@@ -337,12 +331,12 @@ async function showModel(url?: string) {
 
 function onKey(event: KeyboardEvent) {
   fast = event.shiftKey
-  setSnapping(event.shiftKey)
+  selection?.setSnapping(event.shiftKey)
 }
 
 function onBlur() {
   fast = false
-  setSnapping(false) // Shift released while another window had focus
+  selection?.setSnapping(false) // Shift released while another window had focus
 }
 
 onMounted(() => {
@@ -364,7 +358,7 @@ onMounted(() => {
   camera.keysUpward = [...CAMERA_KEYS.up]
   camera.keysDownward = [...CAMERA_KEYS.down]
   camera.attachControl(canvas.value!, true)
-  canvas.value!.addEventListener('pointerleave', hideAimCursor)
+  canvas.value!.addEventListener('pointerleave', () => aimCursor?.hide())
 
   quality = new QualityGovernor(engine, scene, camera)
   quality.setRestFraction(settings.renderRest)
@@ -411,6 +405,9 @@ onMounted(() => {
   fixtureRig.setExtraCasters(crowdScene.casters)
   crowdScene.setAnimate(settings.animate)
   fixtureRig.setAnimate(settings.animate)
+  aimCursor = new AimCursor(scene)
+  zoneOutlines = new ZoneOutlines(scene)
+  updateZoneOutline()
 
   // Camera-space depth of solid surfaces, which the beam shader fades against. Its texture does not follow the
   // canvas size on its own, so it is resized along with it. Nearest sampling avoids halos at depth edges.
@@ -427,47 +424,19 @@ onMounted(() => {
   syncDepthSize()
   fixtureRig.setDepth(depthMap)
   applySoftBeams()
-  gizmo = new GizmoManager(scene)
-  gizmo.usePointerToAttachGizmos = false
-  gizmo.scaleGizmoEnabled = false
-  gizmo.boundingBoxGizmoEnabled = false
-  // Create both gizmos once (enabling creates them), then switch between them with the move/rotate mode.
-  gizmo.positionGizmoEnabled = true
-  gizmo.rotationGizmoEnabled = true
-  const { positionGizmo, rotationGizmo } = gizmo.gizmos
-  for (const g of [positionGizmo, rotationGizmo]) {
-    if (!g) continue
-    g.updateGizmoRotationToMatchAttachedMesh = false // world-aligned axes, even for an upside-down fixture
-    g.onDragObservable.add(() => quality?.touch())
-  }
-  pivot = new TransformNode('selection-pivot', scene)
-  pivot.rotationQuaternion = Quaternion.Identity()
-  const selectedRoot = () => {
-    const id = rig.selectedId
-    const root = id ? fixtureRig?.rootOf(id) : undefined
-    return id && root ? { id, root } : undefined
-  }
-  for (const g of [positionGizmo, rotationGizmo]) {
-    g?.onDragStartObservable.add(beginGroupDrag)
-    g?.onDragObservable.add(applyGroupDrag)
-  }
-  positionGizmo?.onDragEndObservable.add(() => {
-    if (groupStart) return endGroupDrag(false)
-    const target = selectedRoot()
-    if (target) rig.update(target.id, { position: target.root.position.asArray() })
+  selection = new SelectionGizmo(scene, {
+    rootOf: (id) => fixtureRig?.rootOf(id),
+    onMoved: (lights) => {
+      for (const { id, ...change } of lights) rig.update(id, change)
+    },
+    onReadout: (readout) => (rig.rotationReadout = readout),
+    onDrag: () => quality?.touch(),
   })
-  rotationGizmo?.onDragEndObservable.add(() => {
-    if (groupStart) return endGroupDrag(true)
-    const q = selectedRoot()?.root.rotationQuaternion
-    const target = selectedRoot()
-    if (target && q) rig.update(target.id, { rotation: q.normalizeToNew().asArray() })
-  })
-  if (rotationGizmo) setupRotationFeedback(rotationGizmo)
-  applyGizmoMode(rig.gizmoMode)
+  selection.setMode(rig.gizmoMode)
   if (import.meta.env.DEV) {
     ;(window as unknown as { __rig: FixtureRig }).__rig = fixtureRig
     ;(window as unknown as { __quality: QualityGovernor }).__quality = quality
-    ;(window as unknown as { __gizmo?: GizmoManager }).__gizmo = gizmo
+    ;(window as unknown as { __gizmo?: GizmoManager }).__gizmo = selection.manager
     ;(window as unknown as { __depth?: DepthRenderer }).__depth = depthRenderer
     ;(window as unknown as { __screenshot: typeof screenshot }).__screenshot = screenshot
     ;(window as unknown as { __crowd?: CrowdScene }).__crowd = crowdScene
@@ -882,42 +851,13 @@ watch(
 
 // --- crowd zone rectangles: the one being drawn, and the outline of the selected zone -----------------
 
-let zonePreview: LinesMesh | undefined
-let zoneOutline: LinesMesh | undefined
-
-/** A rectangle lying on a plane, as a line loop (the same mesh is updated in place when there is one). */
-function rectangle(
-  existing: LinesMesh | undefined,
-  name: string,
-  x0: number,
-  z0: number,
-  x1: number,
-  z1: number,
-  y: number,
-  color: Color3,
-): LinesMesh | undefined {
-  if (!scene) return existing
-  const points = [new Vector3(x0, y, z0), new Vector3(x1, y, z0), new Vector3(x1, y, z1), new Vector3(x0, y, z1), new Vector3(x0, y, z0)]
-  if (existing) return MeshBuilder.CreateLines(name, { points, instance: existing })
-  const mesh = MeshBuilder.CreateLines(name, { points, updatable: true }, scene)
-  mesh.color = color
-  mesh.isPickable = false
-  mesh.renderingGroupId = 1
-  return mesh
-}
-
 function updateZonePreview(first: [number, number, number]) {
   const point = planePointUnderPointer(first[1])
-  if (!point) return
-  zonePreview = rectangle(zonePreview, 'crowd-preview', first[0], first[2], point.x, point.z, first[1] + 0.03, new Color3(1, 0.85, 0.5))
-  zonePreview?.setEnabled(true)
+  if (point) zoneOutlines?.showPreview(first, [point.x, point.z])
 }
 
 function updateZoneOutline() {
-  const zone = crowdStore.zones.find((z) => z.id === crowdStore.selectedId)
-  if (!zone) return zoneOutline?.setEnabled(false)
-  zoneOutline = rectangle(zoneOutline, 'crowd-outline', zone.x0, zone.z0, zone.x1, zone.z1, zone.y + 0.03, new Color3(0.6, 0.75, 1))
-  zoneOutline?.setEnabled(true)
+  zoneOutlines?.showOutline(crowdStore.zones.find((z) => z.id === crowdStore.selectedId) ?? null)
 }
 
 /** Aims the selected lights at the venue surface under the pointer. */
@@ -937,85 +877,13 @@ function applyAim() {
   rig.applyAim(result.patches, result.unreachable)
 }
 
-/**
- * A crosshair lying on the surface under the pointer while aiming: a ring with four ticks, turned to the surface's
- * normal and sized with the distance so that it looks about the same size on screen near and far.
- */
-let aimCursor: TransformNode | undefined
-function ensureAimCursor(): TransformNode | undefined {
-  if (aimCursor || !scene) return aimCursor
-  const color = new Color3(0.7, 0.85, 1)
-  const material = new StandardMaterial('aim-cursor-mat', scene)
-  material.disableLighting = true
-  material.emissiveColor = color
-  const root = new TransformNode('aim-cursor', scene)
-  const ring = MeshBuilder.CreateTorus('aim-cursor-ring', { diameter: 1, thickness: 0.03, tessellation: 48 }, scene)
-  ring.material = material
-  ring.parent = root
-  const ticks = MeshBuilder.CreateLineSystem(
-    'aim-cursor-ticks',
-    {
-      lines: [
-        [new Vector3(-0.85, 0, 0), new Vector3(-0.3, 0, 0)],
-        [new Vector3(0.3, 0, 0), new Vector3(0.85, 0, 0)],
-        [new Vector3(0, 0, -0.85), new Vector3(0, 0, -0.3)],
-        [new Vector3(0, 0, 0.3), new Vector3(0, 0, 0.85)],
-      ],
-    },
-    scene,
-  )
-  ticks.color = color
-  ticks.parent = root
-  for (const mesh of [ring, ticks]) {
-    mesh.isPickable = false
-    mesh.renderingGroupId = 1 // drawn over the scene, so haze and the beams never hide it
-  }
-  root.rotationQuaternion = new Quaternion()
-  root.setEnabled(false)
-  aimCursor = root
-  return root
-}
-
-function hideAimCursor() {
-  aimCursor?.setEnabled(false)
-}
-
 /** The crosshair on the surface shows in every click mode but placing, which has only the crosshair pointer. */
 function showsAimCursor() {
   return !!interaction.mode && interaction.mode.kind !== 'place'
 }
 
 function updateAimCursor() {
-  if (!scene || !venue || !camera) return
-  const cursor = ensureAimCursor()
-  if (!cursor) return
-  const hit = pickVenue()
-  if (!hit?.pickedPoint) return hideAimCursor()
-  const normal = hit.getNormal(true, true) ?? Vector3.Up()
-  if (hit.ray && Vector3.Dot(normal, hit.ray.direction) > 0) normal.scaleInPlace(-1) // double-sided surfaces: face the viewer
-  const unit = normal.normalizeToNew()
-  const distance = Vector3.Distance(camera.position, hit.pickedPoint)
-  cursor.position.copyFrom(hit.pickedPoint.add(unit.scale(0.004)))
-  cursor.rotationQuaternion = Quaternion.FromUnitVectorsToRef(Vector3.Up(), unit, new Quaternion())
-  cursor.scaling.setAll(Math.max(0.12, distance * 0.07))
-  cursor.setEnabled(true)
-}
-
-/** A small marker on the aim point while it belongs to the selection. */
-let aimMarker: Mesh | undefined
-function updateAimMarker() {
-  if (!scene) return
-  if (!aimMarker) {
-    aimMarker = MeshBuilder.CreateSphere('aim-marker', { diameter: 0.14, segments: 12 }, scene)
-    const material = new StandardMaterial('aim-marker-mat', scene)
-    material.disableLighting = true
-    material.emissiveColor = new Color3(0.6, 0.75, 1)
-    aimMarker.material = material
-    aimMarker.isPickable = false
-  }
-  const anchor = rig.aim.anchor
-  aimMarker.setEnabled(!!anchor && rig.aimActive)
-  if (anchor) aimMarker.position.set(anchor[0], anchor[1], anchor[2])
+  if (camera) aimCursor?.showAt(pickVenue(), camera.position)
 }
 
 /** Puts a fixture on the venue surface under the pointer, hanging from ceilings and standing on floors. */
@@ -1035,94 +903,6 @@ function placeFixture() {
       ? Quaternion.RotationAxis(Vector3.Right(), Math.PI) // exactly upside down: the shortest-arc turn is ambiguous
       : Quaternion.FromUnitVectorsToRef(Vector3.Up(), unit, new Quaternion())
   rig.placeAt({ position: point.asArray(), mount: unit.y < 0 ? 'hanging' : 'standing', rotation: rotation.asArray() })
-}
-
-// --- rotation snapping, tick marks and readout --------------------------------
-
-type RotationAxis = 'x' | 'y' | 'z'
-let snapping = false
-let activeRotation: RotationAxis | null = null
-const tickMeshes: Partial<Record<RotationAxis, LinesMesh>> = {}
-
-/**
- * Tick marks around the ring, one per snap step: short for each step, longer every 15 degrees and
- * longest every 90. Built in the local frame of the gizmo's angle display plane (ring radius 0.3).
- */
-function createTickMarks(utilityScene: Scene): LinesMesh {
-  const stepsPerTurn = Math.round(360 / SNAP_DEGREES)
-  const lines: Vector3[][] = []
-  for (let k = 0; k < stepsPerTurn; k++) {
-    const degrees = k * SNAP_DEGREES
-    const [inner, outer] = degrees % 90 === 0 ? [0.19, 0.41] : degrees % 15 === 0 ? [0.25, 0.35] : [0.275, 0.325]
-    const a = (degrees * Math.PI) / 180
-    lines.push([new Vector3(Math.cos(a) * inner, Math.sin(a) * inner, 0), new Vector3(Math.cos(a) * outer, Math.sin(a) * outer, 0)])
-  }
-  const ticks = MeshBuilder.CreateLineSystem('rotation-ticks', { lines }, utilityScene)
-  ticks.color.set(1, 1, 1)
-  ticks.isPickable = false
-  ticks.alwaysSelectAsActiveMesh = true
-  return ticks
-}
-
-/** Gizmo internals this relies on (Babylon keeps them private): the angle display plane and the drag's start angle. */
-interface RotationRingInternals {
-  _rotationDisplayPlane: Mesh
-  _angles: Vector3
-}
-
-function setupRotationFeedback(rotationGizmo: NonNullable<GizmoManager['gizmos']['rotationGizmo']>) {
-  const rings: Record<RotationAxis, typeof rotationGizmo.xGizmo> = {
-    x: rotationGizmo.xGizmo,
-    y: rotationGizmo.yGizmo,
-    z: rotationGizmo.zGizmo,
-  }
-  for (const axis of ['x', 'y', 'z'] as const) {
-    const ring = rings[axis]
-    const internals = ring as unknown as RotationRingInternals
-    const ticks = createTickMarks(ring.gizmoLayer.utilityLayerScene)
-    ticks.parent = internals._rotationDisplayPlane // inherits its placement, scale and visibility
-    ticks.setEnabled(false)
-    tickMeshes[axis] = ticks
-
-    ring.dragBehavior.onDragStartObservable.add(() => {
-      activeRotation = axis
-      // The angle display starts at the drag's start angle; line the marks up with it so every
-      // snapped position lands exactly on a mark.
-      ticks.rotation.z = internals._angles.x - Math.PI
-      updateReadout(axis, ring.angle)
-      refreshRotationFeedback()
-    })
-    ring.dragBehavior.onDragObservable.add(() => updateReadout(axis, ring.angle))
-    ring.dragBehavior.onDragEndObservable.add(() => {
-      activeRotation = null
-      rig.rotationReadout = null
-      refreshRotationFeedback()
-    })
-  }
-}
-
-function updateReadout(axis: RotationAxis, radians: number) {
-  const degrees = (radians * 180) / Math.PI
-  rig.rotationReadout = {
-    axis,
-    degrees: Math.abs(degrees) < 0.05 ? 0 : degrees,
-    snapping,
-    x: scene?.pointerX ?? 0,
-    y: scene?.pointerY ?? 0,
-  }
-}
-
-function setSnapping(on: boolean) {
-  if (snapping === on) return
-  snapping = on
-  const rotationGizmo = gizmo?.gizmos.rotationGizmo
-  if (rotationGizmo) rotationGizmo.snapDistance = on ? SNAP_STEP : 0
-  refreshRotationFeedback()
-}
-
-function refreshRotationFeedback() {
-  for (const axis of ['x', 'y', 'z'] as const) tickMeshes[axis]?.setEnabled(activeRotation === axis && snapping)
-  if (rig.rotationReadout) rig.rotationReadout = { ...rig.rotationReadout, snapping }
 }
 
 /** Whether light fades out softly before a surface (the depth pass itself always runs: beams are occluded with it). */
@@ -1153,12 +933,6 @@ function applyLook() {
   scene.fogColor.set(level, level, level * 1.2)
 }
 
-function applyGizmoMode(mode: 'move' | 'rotate') {
-  if (!gizmo) return
-  gizmo.positionGizmoEnabled = mode === 'move'
-  gizmo.rotationGizmoEnabled = mode === 'rotate'
-}
-
 /** Renders the current view offscreen at `scale` times its size, without selection outline or gizmo. */
 async function screenshot(scale: number) {
   if (!engine || !scene || !camera || !fixtureRig || !pipeline) throw new Error('viewer not ready')
@@ -1167,7 +941,7 @@ async function screenshot(scale: number) {
   fixtureRig.setSelected([])
   fixtureRig.setStrobeHold(true) // a picture shows strobing lights lit, not caught between flashes
   crowdScene?.setHold(true) // and the crowd standing still
-  gizmo?.attachToNode(null)
+  selection?.hide()
   // Very large frames need less multisampling to fit in GPU memory; fall back to FXAA for the biggest ones.
   quality?.pause()
   // The picture is the middle 16:9 part of the view. A window wider than that only loses its sides, but a narrower
@@ -1190,74 +964,8 @@ async function screenshot(scale: number) {
     fixtureRig.setStrobeHold(false)
     crowdScene?.setHold(false)
     fixtureRig.setSelected(selected)
-    attachGizmo()
+    selection?.attach(selected)
   }
-}
-
-// --- group selection: one gizmo for several lights ----------------------------
-
-function selectedRoots() {
-  return rig.selectedIds.map((id) => ({ id, root: fixtureRig?.rootOf(id) })).filter((x): x is { id: string; root: TransformNode } => !!x.root)
-}
-
-/** Attaches the gizmo to the selected light, or to the pivot at the middle of several (turned back to neutral). */
-function attachGizmo() {
-  if (!gizmo || !pivot) return
-  const roots = selectedRoots()
-  if (roots.length === 0) {
-    gizmo.attachToNode(null)
-  } else if (roots.length === 1) {
-    gizmo.attachToNode(roots[0].root)
-  } else {
-    const centre = Vector3.Zero()
-    for (const { root } of roots) centre.addInPlace(root.position)
-    pivot.position.copyFrom(centre.scaleInPlace(1 / roots.length))
-    pivot.rotationQuaternion?.copyFromFloats(0, 0, 0, 1)
-    gizmo.attachToNode(pivot)
-  }
-}
-
-function beginGroupDrag() {
-  if (!pivot || rig.selectedIds.length < 2) return
-  groupStart = {
-    pivot: pivot.position.clone(),
-    items: selectedRoots().map(({ id, root }) => ({
-      id,
-      root,
-      position: root.position.clone(),
-      rotation: (root.rotationQuaternion ?? Quaternion.Identity()).clone(),
-    })),
-  }
-}
-
-/** Carries every light along with the pivot: its movement, and its turn about the pivot's position. */
-function applyGroupDrag() {
-  quality?.touch()
-  if (!pivot || !groupStart) return
-  const turn = pivot.rotationQuaternion ?? Quaternion.Identity()
-  const offset = new Vector3()
-  for (const item of groupStart.items) {
-    item.position.subtractToRef(groupStart.pivot, offset)
-    offset.rotateByQuaternionToRef(turn, offset)
-    item.root.position.copyFrom(pivot.position).addInPlace(offset)
-    item.root.rotationQuaternion = turn.multiply(item.rotation)
-  }
-}
-
-function endGroupDrag(rotated: boolean) {
-  applyGroupDrag()
-  const start = groupStart
-  groupStart = null
-  if (!start) return
-  for (const { id, root } of start.items) {
-    const position = root.position.asArray()
-    if (rotated && root.rotationQuaternion) {
-      rig.update(id, { position, rotation: root.rotationQuaternion.normalizeToNew().asArray() })
-    } else {
-      rig.update(id, { position })
-    }
-  }
-  attachGizmo() // the pivot moves to the lights' new centre
 }
 
 watch(
@@ -1275,12 +983,12 @@ watch(
 )
 watch(
   () => rig.gizmoMode,
-  (mode) => applyGizmoMode(mode),
+  (mode) => selection?.setMode(mode),
 )
 // After an undo or redo the lights may have moved while the selection stayed the same: put the gizmo back on them.
 watch(
   () => rig.historyVersion,
-  () => attachGizmo(),
+  () => selection?.attach(rig.selectedIds),
   { flush: 'post' },
 )
 // Fixtures placed from the catalog look different once the catalog has arrived.
@@ -1332,7 +1040,7 @@ watch(
   () => rig.selectedIds.join(','),
   () => {
     fixtureRig?.setSelected(rig.selectedIds)
-    attachGizmo()
+    selection?.attach(rig.selectedIds)
   },
   { flush: 'post' },
 )
@@ -1355,11 +1063,14 @@ watch(() => [crowdStore.selectedId, crowdStore.zones], updateZoneOutline, { deep
 watch(
   () => (interaction.mode?.kind === 'zone' ? interaction.mode.first : null),
   (first) => {
-    if (!first) zonePreview?.setEnabled(false)
+    if (!first) zoneOutlines?.hidePreview()
   },
 )
-watch(showsAimCursor, (on) => (on ? updateAimCursor() : hideAimCursor()))
-watch(() => [rig.aim.anchor, rig.aimActive], updateAimMarker)
+watch(showsAimCursor, (on) => (on ? updateAimCursor() : aimCursor?.hide()))
+watch(
+  () => (rig.aimActive ? rig.aim.anchor : null),
+  (point) => aimCursor?.setAimPoint(point),
+)
 watch(
   () => settings.ambient,
   (value) => {
@@ -1406,8 +1117,9 @@ onBeforeUnmount(() => {
   clearInterval(statsTimer)
   pipeline?.dispose()
   quality?.dispose()
-  pivot?.dispose()
-  gizmo?.dispose()
+  selection?.dispose()
+  aimCursor?.dispose()
+  zoneOutlines?.dispose()
   crowdScene?.dispose()
   fixtureRig?.dispose()
   engine?.dispose()
