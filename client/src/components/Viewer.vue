@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
-  AssetContainer,
   Color3,
   Color4,
   DefaultRenderingPipeline,
@@ -10,16 +9,10 @@ import {
   GizmoManager,
   HemisphericLight,
   ImageProcessingConfiguration,
-  LoadAssetContainerAsync,
-  Matrix,
   Mesh,
   MeshBuilder,
-  Plane,
-  PBRMaterial,
   PointerEventTypes,
   PositionGizmo,
-  Quaternion,
-  Ray,
   Scene,
   StandardMaterial,
   Texture,
@@ -27,21 +20,19 @@ import {
   UniversalCamera,
   UtilityLayerRenderer,
   Vector3,
-  type PickingInfo,
   type AbstractMesh,
-  type Node,
 } from '@babylonjs/core'
-import '@babylonjs/loaders/glTF'
 import { profilesVersion } from '../fixtures/profiles'
 import { CAMERA_KEYS } from '../input/keymap'
 import { solveAim } from '../scene/aim'
 import { AimCursor } from '../scene/AimCursor'
 import { Crowd as CrowdScene } from '../scene/Crowd'
-import { clutterCut, triangleIndices } from '../scene/planClutter'
 import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
 import { QualityGovernor } from '../scene/quality'
 import { SelectionGizmo } from '../scene/SelectionGizmo'
-import { insidePose, overviewPose, ViewerCamera, type CameraState } from '../scene/ViewerCamera'
+import { RiderPlanView } from '../scene/RiderPlanView'
+import { mountOnSurface, VenueModel } from '../scene/VenueModel'
+import { insidePose, overviewPose, ViewerCamera, type Bounds } from '../scene/ViewerCamera'
 import { captureCanvas, planShot, SHOT_ASPECT } from '../scene/screenshot'
 import { ZoneOutlines } from '../scene/ZoneOutlines'
 import { useCameraBridge } from '../stores/camera'
@@ -57,9 +48,6 @@ import { useVenues } from '../stores/venues'
 
 const props = defineProps<{ modelUrl?: string }>()
 const emit = defineEmits<{ (e: 'loading', value: boolean): void; (e: 'error', message: string): void }>()
-
-/** Anisotropic filtering level for venue textures (the GPU's own limit applies if it is lower). */
-const MAX_ANISOTROPY = 16
 
 /** Without clustering, venue surfaces accept this many lights at once (Babylon's default of 4 is far too few for a rig). */
 const MAX_LIGHTS = 32
@@ -82,9 +70,8 @@ let walkCamera: ViewerCamera | undefined
 /** walkCamera's Babylon camera, which the post-processing, the depth pass and picking use */
 let camera: UniversalCamera | undefined
 let ambient: HemisphericLight | undefined
-let venue: AssetContainer | undefined
-let bounds: { min: Vector3; max: Vector3 } | undefined
-let loadToken = 0
+let model: VenueModel | undefined
+let planView: RiderPlanView | undefined
 let fixtureRig: FixtureRig | undefined
 let crowdScene: CrowdScene | undefined
 let aimCursor: AimCursor | undefined
@@ -95,120 +82,53 @@ let pipeline: DefaultRenderingPipeline | undefined
 let depthRenderer: DepthRenderer | undefined
 let statsTimer: ReturnType<typeof setInterval> | undefined
 
-/** The floor under the middle of the venue: a ray cast down from mid-height, else the bottom of the model. */
-function floorUnderMiddle(): number {
-  if (!bounds || !scene || !venue) return 0
-  const center = bounds.min.add(bounds.max).scale(0.5)
-  const meshes = new Set(venue.meshes)
-  const hit = scene.pickWithRay(new Ray(center, Vector3.Down(), bounds.max.y - bounds.min.y), (m) => meshes.has(m))
-  return hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : bounds.min.y
+/** The floor under the middle of the venue: met going down from mid-height, else the bottom of the model. */
+function floorUnderMiddle(bounds: Bounds): number {
+  const c = bounds.min.add(bounds.max).scale(0.5)
+  return model?.surfaceBelow(c.x, c.y, c.z, bounds.max.y - bounds.min.y) ?? bounds.min.y
 }
 
 function clearVenue() {
   fixtureRig?.setVenueMeshes([])
-  venue?.dispose()
-  venue = undefined
-  bounds = undefined
+  model?.clear()
   fixtureRig?.setVenueBounds(null)
   venueBox.box = null
   venueBox.tags = []
   venueBox.tagsFromNodes = false
-  parts = new Map()
   walkCamera?.leaveVenue()
 }
 
-const TAG_PREFIX = 'tag:'
-
-/** The parts of the model that can be hidden, by name (see `findParts`). */
-let parts = new Map<string, Node[]>()
-
-/** The tag a model mesh belongs to (a node with several materials loads as meshes named "<node>_primitive<n>"), or null. */
-function tagOf(mesh: AbstractMesh): string | null {
-  return mesh.name.startsWith(TAG_PREFIX) ? mesh.name.slice(TAG_PREFIX.length).replace(/_primitive\d+$/, '') : null
-}
-
-/**
- * The parts of a model, by name. A model from SketchUp has one node per tag ("tag:<name>"). Any other model (a GLB from
- * Blender, say) is split by its top-level nodes, below any single node that only wraps the rest, as many exporters add one.
- */
-function findParts(container: AssetContainer): { parts: Map<string, Node[]>; fromTags: boolean } {
-  const found = new Map<string, Node[]>()
-  const add = (name: string, node: Node) => found.set(name, [...(found.get(name) ?? []), node])
-  for (const mesh of container.meshes) {
-    const tag = tagOf(mesh)
-    if (tag !== null) add(tag, mesh)
-  }
-  if (found.size) return { parts: found, fromTags: true }
-  // nodes with something to see (not an empty, a light or a camera), leaving out the meshes a node's own geometry loads
-  // as (one per material, named "<node>_primitive<n>")
-  const solid = container.meshes.filter((mesh) => mesh.getTotalVertices() > 0)
-  const shown = (nodes: Node[]) => nodes.filter((node) => solid.some((mesh) => mesh === node || mesh.isDescendantOf(node)))
-  const childNodes = (node: Node) => shown(node.getChildren().filter((child) => !child.name.startsWith(`${node.name}_primitive`)))
-  let top = shown(container.rootNodes.flatMap((root) => (root.name === '__root__' ? root.getChildren() : [root])))
-  for (let depth = 0; top.length === 1 && childNodes(top[0]).length && depth < 8; depth++) top = childNodes(top[0])
-  for (const node of top) add(node.name || 'Unnamed', node)
-  return { parts: found, fromTags: false }
-}
-
 /** Shows the model's parts that are on and hides the ones that are switched off for this venue. */
-function applyTags() {
-  if (!venue) return
-  const hidden = new Set(venues.current?.hiddenTags ?? [])
-  for (const [name, nodes] of parts) for (const node of nodes) node.setEnabled(!hidden.has(name))
+function applyHiddenParts() {
+  model?.setHiddenParts(new Set(venues.current?.hiddenTags ?? []))
   fixtureRig?.markShadowsDirty()
 }
 
 async function showModel(url?: string) {
-  if (!scene || !walkCamera) return
-  const token = ++loadToken
+  if (!model || !walkCamera) return
   walkCamera.stopJump()
   clearVenue()
   if (!url) return
 
   emit('loading', true)
+  let current = true
   try {
-    const container = await LoadAssetContainerAsync(url, scene)
-    if (token !== loadToken) return container.dispose() // a newer selection superseded this load
-    // A model exported from Blender and the like can bring its own lights, cameras and animations: the room is lit by the
-    // rig and seen through our camera, and it stands still.
-    for (const item of [...container.lights, ...container.cameras, ...container.animationGroups]) item.dispose()
-    container.lights.length = container.cameras.length = container.animationGroups.length = 0
-    container.addAllToScene()
-    venue = container
-    // Sharper textures on surfaces seen at a grazing angle (brick walls along the room, the floor).
-    const anisotropy = Math.min(MAX_ANISOTROPY, engine?.getCaps().maxAnisotropy || 1)
-    for (const texture of container.textures) texture.anisotropicFilteringLevel = anisotropy
-    fixtureRig?.setVenueMeshes(container.meshes)
-    for (const mesh of container.meshes) mesh.receiveShadows = true
-    const limit = fixtureRig?.clustered ? CLUSTERED_MAX_LIGHTS : MAX_LIGHTS
-    for (const material of container.materials) {
-      // The default (physical) spot falloff is a fixed bell shape that ignores the inner angle. The glTF falloff keeps the
-      // same inverse-square distance falloff but fades between the inner and outer angle, so a light's edge can be sharp.
-      if (material instanceof PBRMaterial) material.useGLTFLightFalloff = true
-      if ('maxSimultaneousLights' in material) (material as { maxSimultaneousLights: number }).maxSimultaneousLights = limit
-    }
-
-    bounds = container.meshes.reduce(
-      (acc, mesh) => {
-        const b = mesh.getHierarchyBoundingVectors(true)
-        return { min: Vector3.Minimize(acc.min, b.min), max: Vector3.Maximize(acc.max, b.max) }
-      },
-      { min: new Vector3(Infinity, Infinity, Infinity), max: new Vector3(-Infinity, -Infinity, -Infinity) },
-    )
+    current = await model.load(url, fixtureRig?.clustered ? CLUSTERED_MAX_LIGHTS : MAX_LIGHTS)
+    const bounds = model.bounds
+    if (!current || !bounds) return // a newer selection superseded this load
+    fixtureRig?.setVenueMeshes([...model.meshes])
     fixtureRig?.setVenueBounds(bounds)
-    const found = findParts(container)
-    parts = found.parts
-    venueBox.tags = [...parts.keys()].sort()
-    venueBox.tagsFromNodes = !found.fromTags
-    applyTags()
+    venueBox.tags = model.partNames
+    venueBox.tagsFromNodes = !model.partsFromTags
+    applyHiddenParts()
     venueBox.box = { min: bounds.min.asArray(), max: bounds.max.asArray() }
     // where the camera starts: where it was left in this venue, else saved view 1, else the overview
     const first = venues.current?.views?.[0]
     if (venues.currentId) walkCamera.showVenue(venues.currentId, first ? { position: first.position, rotation: first.rotation } : overviewPose(bounds))
   } catch (e) {
-    if (token === loadToken) emit('error', (e as Error).message)
+    emit('error', (e as Error).message)
   } finally {
-    if (token === loadToken) emit('loading', false)
+    if (current) emit('loading', false)
   }
 }
 
@@ -231,6 +151,8 @@ onMounted(() => {
 
   walkCamera = new ViewerCamera(scene, canvas.value!, CAMERA_KEYS, settings.fov)
   camera = walkCamera.camera
+  model = new VenueModel(scene, camera)
+  planView = new RiderPlanView(walkCamera, model)
   canvas.value!.addEventListener('pointerleave', () => aimCursor?.hide())
 
   quality = new QualityGovernor(engine, scene, camera)
@@ -354,15 +276,16 @@ onMounted(() => {
   window.addEventListener('keyup', onKey)
   window.addEventListener('blur', onBlur)
 
-  riderStore.ceilingAt = ceilingAt
+  // the height of the first surface above a spot, from 0.3 m over the floor: the ceiling's underside, or whatever hangs there
+  riderStore.ceilingAt = (x, z) => model?.surfaceAbove(x, 0.3, z, 40) ?? null
   bridge.api = {
     getState: () => walkCamera!.state(),
     goTo: (state) => walkCamera?.goTo(state),
     overview: () => {
-      if (bounds) walkCamera?.goTo(overviewPose(bounds))
+      if (model?.bounds) walkCamera?.goTo(overviewPose(model.bounds))
     },
     inside: () => {
-      if (bounds) walkCamera?.goTo(insidePose(bounds, floorUnderMiddle()))
+      if (model?.bounds) walkCamera?.goTo(insidePose(model.bounds, floorUnderMiddle(model.bounds)))
     },
     planShot: (scale) => planShot(engine!, canvas.value!, scale),
     screenshot,
@@ -374,58 +297,20 @@ onMounted(() => {
   fixtureRig.sync(rig.fixtures, settings.haze)
 })
 
-/** Height above which the venue is cut away while the plan is being placed (null: nothing is cut). */
-let clipHeight: number | null = null
-
-/** The venue surface under the pointer. While the venue is cut for plan placing, what is cut away is not hit: the first surface at or below the cut is. */
-function pickVenue(): PickingInfo | null {
-  if (!scene || !venue) return null
-  const venueMeshes = new Set(venue.meshes)
-  if (clipHeight === null) {
-    const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => venueMeshes.has(mesh))
-    return hit?.hit ? hit : null
-  }
-  // A mesh answers a ray with its nearest hit only, and the roof is often part of the same mesh as the floor: go on from each
-  // hit that lies in the cut-away part, along the same ray, until one lies below the cut.
-  const ray = scene.createPickingRay(scene.pointerX, scene.pointerY, Matrix.Identity(), camera ?? null)
-  let origin = ray.origin.clone()
-  for (let i = 0; i < 12; i++) {
-    const hit = scene.pickWithRay(new Ray(origin, ray.direction, 1000), (mesh) => venueMeshes.has(mesh) && mesh.isVisible)
-    if (!hit?.hit || !hit.pickedPoint) return null
-    if (hit.pickedPoint.y <= clipHeight) return hit
-    origin = hit.pickedPoint.add(ray.direction.scale(0.02))
-  }
-  return null
-}
-
-/** The point on a venue surface under the pointer, if there is one. */
-function surfaceUnderPointer(): Vector3 | null {
-  return pickVenue()?.pickedPoint ?? null
-}
-
-/** Where the pointer's ray crosses the horizontal plane at height `y` (a zone's second corner follows the pointer in that plane). */
-function planePointUnderPointer(y: number): Vector3 | null {
-  if (!scene || !camera) return null
-  const ray = scene.createPickingRay(scene.pointerX, scene.pointerY, Matrix.Identity(), camera)
-  if (Math.abs(ray.direction.y) < 1e-4) return null
-  const t = (y - ray.origin.y) / ray.direction.y
-  return t > 0 ? ray.origin.add(ray.direction.scale(t)) : null
-}
-
 /** A click while a crowd zone is being drawn: the first corner on a surface, then the opposite one at the same height. */
 function zoneClick(first: [number, number, number] | null) {
   if (!first) {
-    const point = surfaceUnderPointer()
+    const point = model?.pointUnderPointer()
     if (point) crowdStore.setFirstCorner(point.asArray())
   } else {
-    const point = planePointUnderPointer(first[1])
+    const point = model?.pointerAtHeight(first[1])
     if (point) crowdStore.finishZone([point.x, point.z])
   }
 }
 
 /** A click on the point the people in a zone should face. */
 function facingClick(zoneId: string) {
-  const point = surfaceUnderPointer()
+  const point = model?.pointUnderPointer()
   if (point) crowdStore.setFacing(zoneId, [point.x, point.z])
 }
 
@@ -433,155 +318,44 @@ function facingClick(zoneId: string) {
 
 /** A click while the rider wizard waits for a point in the venue. */
 function riderPick() {
-  const point = surfaceUnderPointer()
+  const point = model?.pointUnderPointer()
   if (point) riderStore.deliverWorld(point.asArray())
 }
 
-/** The height of the first surface above a spot, from 0.3 m over the floor: the ceiling's underside, or whatever hangs there. */
-function ceilingAt(x: number, z: number): number | null {
-  if (!scene || !venue) return null
-  const venueMeshes = new Set(venue.meshes)
-  const hit = scene.pickWithRay(new Ray(new Vector3(x, 0.3, z), Vector3.Up(), 40), (mesh) => venueMeshes.has(mesh))
-  return hit?.hit && hit.pickedPoint ? hit.pickedPoint.y : null
-}
-
-/**
- * The view for placing a plan: the camera high over the middle of the venue looking straight down, the venue cut away above
- * 2.2 m (like an architect's plan, which shows the walls and what stands on the floor, not the roof), the crowd and the lights
- * hidden, and the room light raised so the floor shows. Returns what puts everything back.
- */
-const PLAN_CUT = 2.2
-
-/** Where the camera is for the plan view: set while it is on. */
-let planView: { center: Vector3; floorY: number; height: number; metersPerPixel: number; shiftPx: number; yaw: number } | null = null
-
-/** The camera over the venue at a yaw, shifted sideways so the venue sits in the part of the view the wizard panel leaves free. */
-function planPose(yaw: number): CameraState {
-  const v = planView!
-  const shift = v.shiftPx * v.metersPerPixel // to the right, so the venue moves left on the screen
-  return {
-    position: [v.center.x + Math.cos(yaw) * shift, v.floorY + v.height, v.center.z - Math.sin(yaw) * shift],
-    rotation: [Math.PI / 2 - 0.0005, yaw, 0],
-  }
-}
-
-function enterTopDown(): (() => void) | null {
-  if (!camera || !scene || !bounds || !venue || !engine) return null
-  const center = bounds.min.add(bounds.max).scale(0.5)
-  const meshes = new Set(venue.meshes)
-  // the floor: the first surface met going up from below the model (a ray down from above would meet the roof)
-  const floorHit = scene.pickWithRay(new Ray(new Vector3(center.x, bounds.min.y - 1, center.z), Vector3.Up(), bounds.max.y - bounds.min.y + 2), (m) =>
-    meshes.has(m),
-  )
-  const floorY = floorHit?.hit && floorHit.pickedPoint ? floorHit.pickedPoint.y : bounds.min.y
-  const halfW = (bounds.max.x - bounds.min.x) / 2
-  const halfD = (bounds.max.z - bounds.min.z) / 2
-  const saved = { pose: walkCamera!.state(), fov: camera.fov, clip: scene.clipPlane, maxZ: camera.maxZ }
-  const fov = (50 * Math.PI) / 180
-  // the wizard panel covers the right of the view: fit the venue into what is left of it
+/** The rider wizard's panel covers the right of the view: how many render pixels of it, for the plan view to fit the venue beside. */
+function viewport() {
+  const width = engine?.getRenderWidth() ?? 1
   const panel = document.querySelector('aside[aria-label="Import tech rider"]')?.getBoundingClientRect().width ?? 0
-  const width = engine.getRenderWidth()
-  const heightPx = Math.max(1, engine.getRenderHeight())
   const cssScale = width / Math.max(1, canvas.value?.clientWidth ?? width)
-  const panelPx = panel * cssScale
-  const aspect = Math.max(0.5, (width - panelPx) / heightPx)
-  const height = (1.1 * Math.max(halfD, halfW / aspect)) / Math.tan(fov / 2)
-  const metersPerPixel = (2 * Math.tan(fov / 2) * height) / heightPx
-  // look along an axis of the venue: the nearest quarter turn to where the camera looks now
-  const yaw = Math.round(camera.rotation.y / (Math.PI / 2)) * (Math.PI / 2)
-  planView = { center, floorY, height, metersPerPixel, shiftPx: panelPx / 2, yaw }
-  camera.fov = fov
-  camera.maxZ = Math.max(camera.maxZ, height + (bounds.max.y - bounds.min.y) + 50)
-  clipHeight = floorY + PLAN_CUT
-  scene.clipPlane = new Plane(0, 1, 0, -clipHeight)
-  walkCamera?.setRemembering(false) // the plan view is a passing look, not where the camera should start next time
-  walkCamera?.goTo(planPose(yaw))
-  setPlanClutter(riderStore.hideClutter)
-  fixtureRig?.setHidden(true)
-  crowdScene?.setHidden(true)
-  if (ambient) ambient.intensity = Math.max(ambient.intensity, 0.6) // the floor must be seen, whatever the room light is set to
-  return () => {
-    setPlanClutter(false)
-    planView = null
-    clipHeight = null
-    if (scene) scene.clipPlane = saved.clip
-    if (ambient) ambient.intensity = settings.ambient
-    if (camera) {
-      camera.fov = saved.fov
-      camera.maxZ = saved.maxZ
-    }
-    walkCamera?.goTo(saved.pose)
-    walkCamera?.setRemembering(true)
-    fixtureRig?.setHidden(false)
-    crowdScene?.setHidden(false)
-  }
+  return { width, height: engine?.getRenderHeight() ?? 1, coveredPx: panel * cssScale }
 }
 
-/** The pieces taken out of the model for the plan view (see planClutter.ts), with what puts them back. */
-interface ClutterCut {
-  mesh: Mesh
-  /** the mesh's own triangles; the full list for a mesh drawn without an index buffer */
-  original: ArrayLike<number>
-  unindexed: boolean
-  hiddenAll: boolean
-}
-let planClutter: ClutterCut[] = []
-
-function setPlanClutter(hidden: boolean) {
-  if (!planView || !venue) return
-  if (hidden && planClutter.length === 0) {
-    for (const mesh of venue.meshes) {
-      const positions = mesh.getVerticesData('position')
-      if (!(mesh instanceof Mesh) || !positions) continue
-      const original = triangleIndices(mesh.getIndices(), mesh.getTotalVertices())
-      const cut = clutterCut(positions, original, mesh.computeWorldMatrix(true).m, planView.floorY)
-      if (!cut) continue
-      const entry: ClutterCut = { mesh, original, unindexed: mesh.isUnIndexed, hiddenAll: cut.keep.length === 0 }
-      if (entry.hiddenAll) {
-        mesh.isVisible = false
-      } else {
-        mesh.setIndices(cut.keep, mesh.getTotalVertices())
-        mesh.isUnIndexed = false // drawn and picked by the indices now, also when the model came without them
-      }
-      planClutter.push(entry)
-    }
-  } else if (!hidden) {
-    for (const { mesh, original, unindexed, hiddenAll } of planClutter) {
-      if (hiddenAll) {
-        mesh.isVisible = true
-      } else {
-        mesh.setIndices(Array.from(original), mesh.getTotalVertices())
-        mesh.isUnIndexed = unindexed
-      }
-    }
-    planClutter = []
-  }
-}
-watch(
-  () => riderStore.hideClutter,
-  (hidden) => setPlanClutter(hidden),
-)
-
-/** A quarter turn of the plan view, for venues whose stage is not at the top of the screen. */
-watch(
-  () => riderStore.viewTurns,
-  () => {
-    if (!planView) return
-    planView.yaw += Math.PI / 2
-    walkCamera?.goTo(planPose(planView.yaw))
-  },
-)
-
-let leaveTopDown: (() => void) | null = null
+// While the wizard places the plan, the view looks down on the venue, with the lights and the crowd out of the way and
+// the room light raised so the floor shows, whatever it is set to.
 watch(
   () => riderStore.calibrating,
   (on) => {
-    if (on && !leaveTopDown) leaveTopDown = enterTopDown()
-    else if (!on && leaveTopDown) {
-      leaveTopDown()
-      leaveTopDown = null
+    if (!planView) return
+    if (on && !planView.active) {
+      if (!planView.enter(viewport(), riderStore.hideClutter)) return
+      fixtureRig?.setHidden(true)
+      crowdScene?.setHidden(true)
+      if (ambient) ambient.intensity = Math.max(ambient.intensity, 0.6)
+    } else if (!on && planView.active) {
+      planView.leave()
+      fixtureRig?.setHidden(false)
+      crowdScene?.setHidden(false)
+      if (ambient) ambient.intensity = settings.ambient
     }
   },
+)
+watch(
+  () => riderStore.hideClutter,
+  (hidden) => planView?.setClutterHidden(hidden),
+)
+watch(
+  () => riderStore.viewTurns,
+  () => planView?.turn(),
 )
 
 /** One small sphere for each light the wizard would add, keyed by its draft: picked to select it, moved with the gizmo. */
@@ -719,7 +493,7 @@ watch(
 // --- crowd zone rectangles: the one being drawn, and the outline of the selected zone -----------------
 
 function updateZonePreview(first: [number, number, number]) {
-  const point = planePointUnderPointer(first[1])
+  const point = model?.pointerAtHeight(first[1])
   if (point) zoneOutlines?.showPreview(first, [point.x, point.z])
 }
 
@@ -729,11 +503,8 @@ function updateZoneOutline() {
 
 /** Aims the selected lights at the venue surface under the pointer. */
 function aimAtPointer() {
-  if (!scene || !venue) return
-  const venueMeshes = new Set(venue.meshes)
-  const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => venueMeshes.has(mesh))
-  if (!hit?.hit || !hit.pickedPoint) return
-  rig.aimAt(hit.pickedPoint.asArray())
+  const point = model?.pointUnderPointer()
+  if (point) rig.aimAt(point.asArray())
 }
 
 /** Points the lights that were aimed at the aim point (again), with the current spread and fan. */
@@ -750,26 +521,13 @@ function showsAimCursor() {
 }
 
 function updateAimCursor() {
-  if (camera) aimCursor?.showAt(pickVenue(), camera.position)
+  if (camera && model) aimCursor?.showAt(model.pickUnderPointer(), camera.position)
 }
 
-/** Puts a fixture on the venue surface under the pointer, hanging from ceilings and standing on floors. */
+/** Puts the fixture chosen in the picker on the venue surface under the pointer, hanging from ceilings and standing on floors. */
 function placeFixture() {
-  if (!scene || !venue) return
-  const venueMeshes = new Set(venue.meshes)
-  const hit = scene.pick(scene.pointerX, scene.pointerY, (mesh) => venueMeshes.has(mesh))
-  if (!hit?.hit || !hit.pickedPoint) return
-  const normal = hit.getNormal(true, true) ?? Vector3.Up()
-  // Venue surfaces are double sided: make sure the normal faces the viewer.
-  if (hit.ray && Vector3.Dot(normal, hit.ray.direction) > 0) normal.scaleInPlace(-1)
-  const point = hit.pickedPoint.add(normal.scale(0.003))
-  // The base sits on the surface: turn the fixture so its local +Y (away from the mount) follows the surface normal.
-  const unit = normal.normalizeToNew()
-  const rotation =
-    unit.y < -0.9999
-      ? Quaternion.RotationAxis(Vector3.Right(), Math.PI) // exactly upside down: the shortest-arc turn is ambiguous
-      : Quaternion.FromUnitVectorsToRef(Vector3.Up(), unit, new Quaternion())
-  rig.placeAt({ position: point.asArray(), mount: unit.y < 0 ? 'hanging' : 'standing', rotation: rotation.asArray() })
+  const hit = model?.pickUnderPointer()
+  if (hit?.pickedPoint) rig.placeAt(mountOnSurface(hit.pickedPoint, hit.getNormal(true, true) ?? Vector3.Up(), hit.ray?.direction))
 }
 
 /** Whether light fades out softly before a surface (the depth pass itself always runs: beams are occluded with it). */
@@ -839,7 +597,7 @@ watch(
   () => props.modelUrl,
   (url) => showModel(url),
 )
-watch(() => venues.current?.hiddenTags, applyTags, { deep: true })
+watch(() => venues.current?.hiddenTags, applyHiddenParts, { deep: true })
 watch(
   [() => rig.fixtures, () => settings.haze],
   () => {
@@ -965,8 +723,7 @@ onBeforeUnmount(() => {
   markerGizmo?.dispose()
   markerUtility?.dispose()
   for (const marker of riderMarkers.values()) marker.dispose()
-  leaveTopDown?.()
-  leaveTopDown = null
+  planView?.leave()
   riderStore.ceilingAt = null
   for (const marker of riderRefMarkers) marker.dispose()
   bridge.api = null
@@ -974,7 +731,7 @@ onBeforeUnmount(() => {
   resizeObserver?.disconnect()
   window.removeEventListener('keydown', onKey)
   window.removeEventListener('keyup', onKey)
-  loadToken++
+  model?.dispose()
   window.removeEventListener('blur', onBlur)
   clearInterval(statsTimer)
   pipeline?.dispose()
