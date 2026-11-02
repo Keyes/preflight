@@ -32,9 +32,10 @@ Comments and names follow CONTRIBUTING: read like the code around it, and commen
 
 ## Tests
 
-- Pure logic gets unit tests: maths, parsing, mapping, undo, checks of request bodies.
-- Server routes are tested over HTTP, with the data folder pointed at a temporary directory.
-- Rendering is covered by a smoke test that opens the demo club and fails on console errors; pictures are checked by eye in the running app, as CONTRIBUTING says.
+- Pure logic gets unit tests next to the code it tests (`*.test.ts`): maths, parsing, mapping, undo, checks of request bodies. The server's run on `node:test`, the client's on Vitest.
+- Server routes are tested over HTTP (`server/src/index.test.ts`): the tests start the server in its own process, with its venues in a temporary folder.
+- Rendering is covered by a browser smoke test (`e2e/smoke.spec.ts`, Playwright) that opens the demo club, checks the view shows more than one flat color, and fails on any console error. Whether the picture looks right is checked by eye in the running app, as CONTRIBUTING says.
+- A test name is a sentence that says what should happen ("refuses a model that is empty, …").
 - Test data is made up. Never commit a real venue, rider or patch.
 
 ## Size as a smell
@@ -62,10 +63,11 @@ Formatting, unused code and anything the tools below catch are not review commen
 | Format | `npm run format` (fixes), `npm run format:check` | Prettier, configured in `.prettierrc.json` to the existing style: no semicolons, single quotes, lines up to 160 characters. |
 | Lint | `npm run lint` | ESLint with typescript-eslint and eslint-plugin-vue (`eslint.config.js`), including rules that need type information, such as unhandled promises. The rules about untyped values are off in the three files that read request and response bodies, until those are checked against schemas. |
 | Unused code | `npm run knip` | Unused files, dependencies, and exports that nothing outside their own file uses (`knip.json`). |
-| Types | `npm run typecheck -w server`, `npm run build -w client` | `tsc` and `vue-tsc` with the settings above. |
-| Tests | `npm test -w server` | The server's unit tests. |
+| Types | `npm run typecheck -w server`, `npx tsc --noEmit -p e2e`, `npm run build -w client` | `tsc` and `vue-tsc` with the settings above. |
+| Tests | `npm test -w server`, `npm test -w client` | The unit tests and the server's route tests. |
+| Browser | `npm run test:e2e` | The smoke test in a headless Chromium. It starts its own server and client on ports 3199 and 5199, with an empty scratch data folder. The first time, install the browser with `npx playwright install chromium`. |
 
-`npm run check` runs all of them in the order CI does.
+`npm run check` runs all of them except the browser test, in the order CI does; CI runs the browser test as a job of its own.
 
 ESLint sees the types a `.vue` file exports as `any`, so a type that more than one file uses belongs in a `.ts` file (as `MenuItem` in `components/contextMenu.ts`).
 

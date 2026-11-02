@@ -112,7 +112,7 @@ In order of how much they get in the way.
 7. **Keyboard shortcuts are scattered.** The app-wide keys (`?`, C, P, T, G, R, Escape, Delete, Ctrl/Cmd+A, undo and redo) are handled in `FixturesPanel.vue`, a sidebar list; six other components, `Viewer.vue` among them, add their own window listeners. The list of shortcuts is written out three times: `HelpPanel.vue`, the empty inspector in `App.vue`, and the README.
 8. **Saving works three slightly different ways.** Lights are saved 400 ms after the last change, haze and crowd 500 ms after it, each with its own timer. Saved views and hidden tags go back to the old value when saving fails; lights, haze and crowd keep the new value and show an error.
 
-The client has no tests yet, and the server's tests do not reach `index.ts`.
+The client's tests cover its plain logic (undo, profiles, crowd, venue check, aiming, plan calibration) but no store or component, and the browser test only checks that the demo club renders. Before the refactors in [Direction](#direction) move code, each needs tests around what it moves.
 
 ## Direction
 
@@ -139,4 +139,4 @@ Suggested order, smallest risk first:
 1. **`shared/` workspace** for the types and the plan-to-venue maths. Cheap, and it ends the drift.
 2. **One interaction mode and one keymap.** Small changes that make the click and key handling readable.
 3. **Split the server's routes, checks and upload handling.** The checks become testable on the way.
-4. **Split `Viewer.vue` into scene controllers.** The largest change; do it only after a browser smoke test exists that loads the demo club and checks the view renders without errors.
+4. **Split `Viewer.vue` into scene controllers.** The largest change; the browser smoke test (`e2e/smoke.spec.ts`) has to keep passing at every step, and should grow with the interactions each step moves.

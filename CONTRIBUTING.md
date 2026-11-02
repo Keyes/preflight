@@ -22,13 +22,13 @@ Run the checks that CI runs (formatting, lint, unused code, types, tests and the
 npm run check
 ```
 
-`npm run format` fixes the formatting, and `npx eslint . --fix` fixes the lint findings that have an automatic fix. Then try the change in the running app (`npm run dev`), especially anything that renders.
+`npm run format` fixes the formatting, and `npx eslint . --fix` fixes the lint findings that have an automatic fix. For a change to the client, also run the browser smoke test, `npm run test:e2e` (the first time, `npx playwright install chromium` downloads the browser). Then try the change in the running app (`npm run dev`), especially anything that renders.
 
 What the checks enforce, and what a review looks at beyond them, is in [docs/engineering.md](docs/engineering.md).
 
 - Keep a pull request to one change, and say in its description what it does and how you checked it. A screenshot helps for anything visible.
 - Write code that reads like the code around it: the same naming, structure and amount of comments. Comments explain why something is done, not what the next line does.
-- Add or update tests in `server/src/**/*.test.ts` when you change server logic. Test data must be made up.
+- Add or update tests next to the code (`*.test.ts` in `server/src/` or `client/src/`) when you change logic, and in `server/src/index.test.ts` when you change what a route accepts. Test data must be made up.
 - Update the README (and `docs/roadmap.md`) when you change what the app can do or how it's set up.
 - Commit messages are one plain sentence that says what the change does, for example "Hide small floor objects while the rider plan is being placed".
 

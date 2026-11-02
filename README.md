@@ -88,9 +88,13 @@ There is no login, so both only accept connections from the same machine by defa
 
 ```
 npm test -w server
+npm test -w client
+npm run test:e2e
 ```
 
-`npm run check` runs everything CI runs: formatting, lint, unused code, type checks, tests and the client build.
+The first two are unit tests; the server's include its routes, tested over HTTP. `test:e2e` opens the demo club in a headless Chromium and fails if it renders nothing or logs an error; it starts its own server and client on ports 3199 and 5199, with an empty scratch data folder, so your venues are never touched. Install the browser once with `npx playwright install chromium`.
+
+`npm run check` runs everything CI runs except the browser test: formatting, lint, unused code, type checks, unit tests and the client build.
 
 ## Venue models
 
