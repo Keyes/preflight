@@ -7,6 +7,10 @@ test('the demo club opens and renders without errors', async ({ page }) => {
   })
   page.on('pageerror', (error) => errors.push(error.message))
 
+  // A first visit: no venues (other tests make theirs on the same server).
+  const venues = (await (await page.request.get('/api/venues')).json()) as { id: string }[]
+  for (const { id } of venues) expect((await page.request.delete(`/api/venues/${id}`)).ok()).toBe(true)
+
   await page.goto('/')
   // With no venues yet, the Venues window opens and offers the demo club.
   const model = page.waitForResponse((res) => res.url().includes('/model.glb') && res.ok())

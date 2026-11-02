@@ -17,6 +17,8 @@ export default defineConfig({
   globalTeardown: './teardown.ts',
   // Rendering in software (as headless browsers and CI do) is slow: loading the demo club takes a while.
   timeout: 90_000,
+  // The tests share one server, and software rendering is heavy: one browser at a time.
+  workers: 1,
   expect: { timeout: 30_000 },
   forbidOnly: !!process.env.CI,
   reporter: process.env.CI ? 'github' : 'list',
