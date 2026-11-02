@@ -1,6 +1,6 @@
 # Architecture
 
-Status: describes the code as of November 2026. [Direction](#direction) is a plan; the four steps of its suggested order and its autosave helper are built, and its `domain/` folder is not. Update this file when a change moves a boundary between the parts below, so it stays a map you can trust.
+Status: describes the code as of November 2026. [Direction](#direction) is a plan; everything in it is built; what is still open is in [Known problems](#known-problems). Update this file when a change moves a boundary between the parts below, so it stays a map you can trust.
 
 pre(f)light is two programs: a browser client that draws the venue and lets you place and edit lights, and a small Node server that stores venues, converts models and reads tech riders. They talk over a JSON API under `/api`; in development Vite passes `/api` and `/ws` on to the server (`client/vite.config.ts`). The shape of what they exchange, and the maths both apply to it, are in a third package, `shared/`.
 
@@ -13,7 +13,7 @@ flowchart TB
     Stores["stores/<br/>state, undo, autosave, click mode"]
     Input["input/<br/>keymap, shortcuts"]
     Scene["scene/<br/>Babylon: one controller per job<br/>(camera, model, look, gizmo, rig, crowd…)"]
-    Domain["fixtures/profiles.ts, crowdModel.ts,<br/>venueCheck.ts, fixtureHistory.ts"]
+    Domain["domain/<br/>profiles, fixture bodies, gobos, crowd,<br/>venue check, undo history, limits"]
     Api["api.ts<br/>one function per endpoint"]
   end
   subgraph server["server/ (Node)"]
@@ -48,12 +48,12 @@ Arrows point from the code that imports to the code it uses.
 | Layer | Where | What it does | May import |
 |---|---|---|---|
 | Shell | `main.ts`, `App.vue` | Mounts the app, lays out the sidebar, view and inspector dock, and opens windows (picker, venues, rider import, transfer) when a store says so. | everything below |
-| Components | `components/*.vue` (26) | Panels, windows and the inspector. They read stores and call store actions. Most of their length is CSS: the larger ones have 170 to 240 lines of script. | stores, `input/keymap.ts`, domain, `shared/` |
+| Components | `components/*.vue` (26) | Panels, windows and the inspector. They read stores and call store actions, and ask the view things through the viewer store. Most of their length is CSS: the larger ones have 170 to 240 lines of script. | stores, `input/keymap.ts`, domain, `shared/` |
 | Viewer | `components/Viewer.vue` | Makes the engine and the scene controllers, passes store state to them in watchers, turns their callbacks and the clicks in the view into store actions (routing a click by the click mode), and disposes them. It builds no Babylon objects itself but the engine and the depth pass. | stores, scene, domain, `input/keymap.ts` |
 | Input | `input/` | `keymap.ts` lists every app-wide shortcut and gesture with its help text, and matches key presses (plain TypeScript). `shortcuts.ts` is the one key listener for the app, set up by `App.vue`, which runs the matching store action. | stores (`shortcuts.ts` only) |
-| Stores | `stores/` (13 Pinia stores) | What the app knows: venues, the lights of the open venue with selection and undo, crowd, rider import, settings, layout, and what the next click in the view does (`interaction`). Every part of a venue they change goes to the server through one autosave (`autosave.ts`). | domain, `api.ts`, `shared/`; scene types only (`CameraState`, `RotationReadout`) |
+| Stores | `stores/` (13 Pinia stores) | What the app knows: venues, the lights of the open venue with selection and undo, the fixture catalog and its profiles, crowd, rider import, settings, layout, and what the next click in the view does (`interaction`). Every part of a venue they change goes to the server through one autosave (`autosave.ts`). What they need from the view (the ceiling height, aiming) they ask through the viewer store (`viewer.ts`). | domain, `api.ts`, `shared/`; scene types only (`CameraState`, `RotationReadout`, `AimResult`) |
 | Scene | `scene/` | Babylon, one controller per job, each a class that builds its objects, takes plain data and callbacks (no stores) and has a `dispose`: `FixtureRig` (lights, beams, shadows, gobos), `Crowd`, `ViewerCamera` (walking, jumps, the pose remembered per venue), `VenueModel` (loading, parts, everything about what is under the pointer), `Look` (post-processing, fog, room light), `SelectionGizmo`, `AimCursor`, `ZoneOutlines`, `RiderPlanView`, `RiderMarkers`. Beside them the beam shader, gobo patterns, fixture body models, adaptive render size, screenshots, and plain maths (`planClutter.ts`, aiming). | domain, `shared/` |
-| Domain | `fixtures/profiles.ts`, `crowdModel.ts`, `venueCheck.ts`, `atmosphere.ts`, `stores/fixtureHistory.ts` | Rules and maths about lights, crowds and venues, with no Vue or Babylon in them (with one exception, see below). | `shared/` |
+| Domain | `domain/` | Rules and maths about lights, crowds and venues, with no Vue, Pinia or Babylon: fixture profiles (what a catalog fixture can do), fixture bodies (kind, size, lens), gobo patterns, the crowd model, the venue check, the undo history, the light limits, atmosphere defaults. | `shared/` |
 | API | `api.ts` | One function per endpoint. | `shared/` |
 
 The `venues` store is the hub: it holds every venue record, and the `rig`, `crowd` and `rider` stores work on parts of the open one (`venues.current.fixtures`, `.groups`, `.crowd`). Settings, layout, the open venue, camera positions and the vision API key are kept in the browser's `localStorage`; everything else is saved on the server.
@@ -105,7 +105,8 @@ The rider import runs across both programs: the server reads the patch table fro
 
 - **The scene follows the state.** `FixtureRig` is about 1,000 lines behind a small interface: `sync(fixtures, haze)` makes the scene match the data, and `rootOf`, `pivotOf` and `dispose` cover the rest. Nothing outside it has to know how lights, shadows and gobos are built.
 - **A controller per job in the scene.** New scene code is a class in `scene/` like the others: it builds its Babylon objects in its constructor, takes plain data (`show(preview)`, `attach(ids)`) and reports through callbacks given to it, knows no store, and releases everything in `dispose`. `Viewer.vue` adds one variable, one line where the scene is made, its watchers and one line in the teardown. Its maths go in plain functions beside it, tested without a scene; the class itself can be tested on Babylon's `NullEngine` (see `SelectionGizmo.test.ts`).
-- **Babylon objects stay out of Vue's reactivity.** `Viewer.vue` keeps the engine and the controllers in plain variables, and the camera bridge uses `shallowRef`. Vue would otherwise wrap every engine object in a proxy, which is slow and breaks identity checks.
+- **One way to ask the view.** Whatever the rest of the app needs from the 3D view (camera moves, screenshots, the height of the ceiling over a spot, how to aim lights) is a method of `ViewerApi`, which `Viewer.vue` registers in the viewer store: `useViewer().api?.…`. The view never reaches into a store; it follows their state in watchers.
+- **Babylon objects stay out of Vue's reactivity.** `Viewer.vue` keeps the engine and the controllers in plain variables, and the viewer store holds its API in a `shallowRef`. Vue would otherwise wrap every engine object in a proxy, which is slow and breaks identity checks.
 - **Logic that needs no framework lives without one.** `FixtureHistory` is a plain class that the `rig` store drives, so undo can be tested without Vue. The keymap's matching is plain too.
 - **One value for what a click does.** A new kind of click is a new case of `ClickMode` in `stores/interaction.ts`: the store that starts it also finishes it, the viewer's pointer handler gets one more `case`, and the edit bar's hint one more line. Starting a mode ends the one before, and Esc or opening another venue ends it, so two can never be on at once.
 - **Keys live in the keymap.** A new app-wide shortcut is an entry in `input/keymap.ts` (keys, help text, group) and a handler in `input/shortcuts.ts`; the help panel, the empty inspector and button titles pick it up. A test fails if two shortcuts, or a shortcut and the camera, share a key. Only keys that mean something inside one window or field stay with it, and that window stops them from reaching the app.
@@ -117,17 +118,13 @@ The rider import runs across both programs: the server reads the patch table fro
 
 ## Known problems
 
-In order of how much they get in the way.
+What is still open, most noticeable first.
 
-1. **The stores and the viewer talk in three different ways**, besides state the viewer watches (such as the click mode). The camera store holds an interface the viewer registers (`camera.api`); the viewer puts a function into the rider store (`rider.ceilingAt`); and the rig store bumps a counter the viewer watches (`rig.aim.tick`), after which the viewer solves the aim and calls `rig.applyAim()`. Each works, but a reader has to learn all three.
-2. **A few imports cross layers the wrong way.**
-   - `fixtures/profiles.ts` imports `modelFor` and `lensStrip` from `scene/fixtureModel.ts`, a module that imports Babylon, so the domain layer depends on the scene layer.
-   - `profiles.ts` keeps the catalog in a module-level map and makes callers reactive with `void profilesVersion.value`; the `catalog` store would be the natural owner.
-   - `FixtureInspector.vue` and `SettingsPanel.vue` import light limits (`MAX_SHADOW_LIGHTS`, `MAX_GOBO_LIGHTS`) from `scene/FixtureRig.ts`.
-   - `scene/aim.ts` mixes the pan and tilt maths with lookups on a `FixtureRig`, so the maths cannot be tested without a scene.
-   - `Viewer.vue` reads the rider wizard's panel width from the page (`aside[aria-label="Import tech rider"]`) to fit the plan view beside it; the layout store could own that size.
+1. **A change in the last half second before the page closes is lost.** The autosave sends it 500 ms after the change with an ordinary request, which a closing page cancels. `keepalive` requests, sent when the page hides, would carry it.
+2. **The plan view does not fit the venue beside the rider wizard in a small window.** It fits the venue into the part of the view the wizard leaves free, but counts that part at least half as wide as high, so in a narrow view part of the venue lies under the wizard or outside the view.
+3. **`noUncheckedIndexedAccess` is off.** It would find about 270 places, most of them array maths in `scene/planClutter.ts` and `scene/Crowd.ts` and the rider patch reader.
 
-The client's tests cover its plain logic (undo, profiles, crowd, venue check, aiming, the keymap, the plan view's fit and clutter cut, camera poses, how a light sits on a surface; plan calibration is tested in `shared/`), the click mode across the `rig`, `crowd` and `rider` stores, and the selection gizmo and rider markers on Babylon's `NullEngine`, but no component. The browser tests (`e2e/`) open the demo club and drive the view the way a person does: the camera, selecting and the gizmo, aiming, placing, drawing a crowd zone, hiding model parts, a screenshot, and the rider wizard's plan view and markers. Before a refactor moves code, it needs tests around what it moves.
+The client's tests cover its plain logic (undo, profiles, crowd, venue check, aiming, the keymap, the plan view's fit and clutter cut, camera poses, how a light sits on a surface; plan calibration is tested in `shared/`), the stores (the click mode across `rig`, `crowd` and `rider`, the autosave and how a venue's parts are saved, the catalog's profiles, aiming through the view), and the selection gizmo and rider markers on Babylon's `NullEngine`, but no component. The browser tests (`e2e/`) open the demo club and drive the view the way a person does: the camera, selecting and the gizmo, aiming, placing, drawing a crowd zone, hiding model parts, a screenshot, and the rider wizard's plan view and markers. Before a refactor moves code, it needs tests around what it moves.
 
 ## Direction
 
@@ -136,7 +133,7 @@ Where the code should go, so that each problem above has a home:
 ```
 shared/            types, request schemas and plan-to-venue maths (done)
 client/src/
-  domain/          profiles, crowd model, venue check, fixture history: no Vue, no Babylon, unit-tested
+  domain/          profiles, crowd model, venue check, fixture history: no Vue, no Babylon, unit-tested (done)
   scene/           one controller per job (camera, model, look, gizmos, rider plan, crowd zones), each with dispose (done)
   stores/          one value for what a click does (done); one autosave helper (done)
   input/           one keymap that the handlers and the help panel both read (done)
@@ -147,7 +144,7 @@ server/src/
   rider/           the pipeline, unchanged
 ```
 
-Dependencies point down only: components → stores → domain and `shared/`; the viewer → scene → domain and `shared/`; server routes → services → `shared/`. A tool such as dependency-cruiser could check this in CI.
+Dependencies point down only: components → stores → domain and `shared/`; the viewer → scene → domain and `shared/`; server routes → services → `shared/`. ESLint checks this (`layer(...)` in `eslint.config.js`): an import that goes up fails the lint with a message saying which way it should go.
 
 Suggested order, smallest risk first:
 

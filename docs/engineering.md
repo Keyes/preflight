@@ -7,7 +7,7 @@ What a change is checked against in review. [CONTRIBUTING.md](../CONTRIBUTING.md
 1. **Deep modules.** A module should hide a lot behind a small interface. `FixtureRig` is the example: a thousand lines of lights, shadows and gobos behind `sync(fixtures)`. A function or class that only passes its arguments on to another adds a name to learn and hides nothing; leave it out. (After John Ousterhout's *A Philosophy of Software Design*.)
 2. **Plain logic, framework at the edges.** Maths and rules (aiming, placement, crowd density, undo, rider mapping) take plain data and return plain data, with no Vue, Babylon, DOM or file system in them. Vue, Babylon and Node are a thin layer around that logic. This is what makes it testable.
 3. **One owner for each piece of state.** Every value has one place that holds it and changes it; everything else reads it or asks the owner. The 3D scene is drawn from the stores, never the other way round.
-4. **Dependencies point down.** Components use stores, stores use domain code, never the reverse. The layers and what each may import are in [architecture.md](architecture.md).
+4. **Dependencies point down.** Components use stores, stores use domain code, never the reverse. The layers and what each may import are in [architecture.md](architecture.md), and the lint fails an import that goes up.
 5. **Check data where it enters, trust it inside.** Request bodies, uploaded files, `localStorage`, JSON from disk and anything a vision model returns are checked for shape, type and size where they come in. A request body is checked against its zod schema in `shared/requests.ts` (`readBody` on the server); a new endpoint gets a schema there, not checks written by hand. Past that point the types are true, and code does not check them again.
 6. **Say what failed.** An expected failure (a bad upload, a model that cannot be converted, a full disk) reaches the user as a message that says what happened and what to do. A bug throws. An empty `catch` needs a comment saying why ignoring the error is safe (as in `venues.ts` when `localStorage` is unavailable).
 7. **Whoever creates something disposes it.** Babylon meshes, materials and textures, event listeners, timers, observers and object URLs each have an owner that releases them, usually in `dispose()` or `onBeforeUnmount`.
@@ -63,7 +63,7 @@ Formatting, unused code and anything the tools below catch are not review commen
 | Check | Command | What it enforces |
 |---|---|---|
 | Format | `npm run format` (fixes), `npm run format:check` | Prettier, configured in `.prettierrc.json` to the existing style: no semicolons, single quotes, lines up to 160 characters. |
-| Lint | `npm run lint` | ESLint with typescript-eslint and eslint-plugin-vue (`eslint.config.js`), including rules that need type information, such as unhandled promises. |
+| Lint | `npm run lint` | ESLint with typescript-eslint and eslint-plugin-vue (`eslint.config.js`), including rules that need type information, such as unhandled promises. It also keeps the layers: an import from a layer above fails with a message saying which way it should go. |
 | Unused code | `npm run knip` | Unused files, dependencies, and exports that nothing outside their own file uses (`knip.json`). |
 | Types | `npm run typecheck -w shared`, `npm run typecheck -w server`, `npx tsc --noEmit -p e2e`, `npm run build -w client` | `tsc` and `vue-tsc` with the settings above. |
 | Tests | `npm test -w shared`, `npm test -w server`, `npm test -w client` | The unit tests and the server's route tests. |
