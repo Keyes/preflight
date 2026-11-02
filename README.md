@@ -57,7 +57,7 @@ The small ⓘ icons next to section titles and settings explain them in a toolti
 | P | Pause or resume every animation (crowd movement, haze drift, strobe flashes, gobo spin; also "Animations" in Settings) |
 | C | Show or hide the crowd (zones are drawn with "+ Zone" under Crowd in the sidebar; density and movement are below the zones; the crowd button at the top right does the same as C) |
 | Click a group (Ctrl/Cmd-click to add) | Select the lights of a saved group, in the group's order; "+ From selection" in the Groups section saves the current selection as one |
-| Esc | Cancel placing, or deselect |
+| Esc | Close the open popover, else cancel what the next click would do (place a light, aim, draw a zone, pick a point for a rider plan), else deselect |
 | ? | List every keyboard shortcut |
 | Right-click a venue | Rename |
 | Right-click a saved view | Rename, update to the current camera, delete |

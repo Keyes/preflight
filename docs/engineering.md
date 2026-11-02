@@ -21,7 +21,8 @@ Comments and names follow CONTRIBUTING: read like the code around it, and commen
 - State that more than one component needs lives in a store. State one component needs stays in it.
 - Prefer `computed` to a `watch` that copies a value. A `watch` is for side effects (talking to the scene, saving, timers).
 - Babylon objects never go into reactive state: keep them in plain variables, or use `shallowRef` / `markRaw`. Vue would wrap them in proxies, which is slow and breaks identity checks.
-- Modes that exclude each other are one value with a type per mode (a discriminated union), not several booleans.
+- Modes that exclude each other are one value with a type per mode (a discriminated union), not several booleans. What the next click in the view does is one such value (`stores/interaction.ts`).
+- App-wide keyboard shortcuts are entries in `input/keymap.ts`, never a component's own window listener. A component handles keys only inside its own window or field, and stops them there.
 
 ## TypeScript
 
