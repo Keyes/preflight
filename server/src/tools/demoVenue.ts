@@ -10,9 +10,8 @@
 import { createHash } from 'node:crypto'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
-import type { CatalogFile } from '../catalog.js'
+import type { CatalogFile, CameraView, Fixture, FixtureGroup } from '@preflight/shared'
 import type { DemoPreset } from '../demo.js'
-import type { CameraView, Fixture, FixtureGroup } from '../venues.js'
 
 const OUT_DIR = fileURLToPath(new URL('../../../samples/', import.meta.url))
 const CATALOG = fileURLToPath(new URL('../../catalog/fixtures.json', import.meta.url))

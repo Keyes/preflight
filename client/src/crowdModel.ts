@@ -1,4 +1,4 @@
-import type { Crowd, CrowdZone } from './api'
+import type { Crowd, CrowdZone } from '@preflight/shared'
 
 /** People per square meter at density 100%: a packed standing crowd. */
 export const MAX_PER_M2 = 4

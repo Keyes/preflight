@@ -1,4 +1,4 @@
-import type { RiderFile, RiderLamp, RiderPatchRow, RiderPlan, RiderTruss } from '../types.js'
+import type { RiderFile, RiderLamp, RiderPatchRow, RiderPlan, RiderTruss } from '@preflight/shared'
 import { parseJsonAnswer, type VisionProvider } from './provider.js'
 import { cropPng, toWhole, WHOLE, type PageImage, type Region } from './render.js'
 

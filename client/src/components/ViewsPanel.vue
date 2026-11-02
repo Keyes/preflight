@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
-import type { CameraView } from '../api'
+import type { CameraView } from '@preflight/shared'
 import { useCameraBridge } from '../stores/camera'
 import { useVenues } from '../stores/venues'
 import ContextMenu from './ContextMenu.vue'

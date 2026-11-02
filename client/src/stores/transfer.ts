@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { CrowdZone, Fixture, FixtureGroup, Venue } from '../api'
+import type { CrowdZone, Fixture, FixtureGroup, Venue } from '@preflight/shared'
 import { useVenues } from './venues'
 
 /** The window for copying lights (and the groups they are in) from one venue to another. */

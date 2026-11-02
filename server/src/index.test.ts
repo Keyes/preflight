@@ -6,9 +6,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { after, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import type { DraftResult } from './rider/draft.js'
-import type { RiderFile } from './rider/types.js'
-import type { Venue } from './venues.js'
+import type { DraftResult, RiderFile, Venue } from '@preflight/shared'
 
 // The server as it runs: started as its own process, with its venues in a scratch folder, and asked over HTTP.
 

@@ -1,5 +1,4 @@
-import type { CatalogFixture, CatalogMode } from '../catalog.js'
-import type { RiderPatchRow } from './types.js'
+import type { CatalogFixture, CatalogMode, RiderPatchRow } from '@preflight/shared'
 
 /**
  * Which catalog fixture a rider row is, and in which of its DMX modes. The rider names a fixture in the mode column when it

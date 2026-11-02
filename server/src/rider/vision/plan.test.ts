@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
 import { createCanvas } from '@napi-rs/canvas'
-import type { RiderLamp, RiderPatchRow } from '../types.js'
+import type { RiderLamp, RiderPatchRow } from '@preflight/shared'
 import { bands, crossCheck, mergeLamps, normalizeLabel, numberLamps, parseLamps, parseLayout, readPlan, reconcileLabels, trussOnPlan } from './plan.js'
 import { parseJsonAnswer, type VisionProvider } from './provider.js'
 import { cropPng, toWhole, type PageImage } from './render.js'

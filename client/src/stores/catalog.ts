@@ -1,13 +1,14 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
-import type { CatalogFixture } from '../api'
+import type { CatalogFile, CatalogFixture } from '@preflight/shared'
 import { GENERIC_CATALOG_ENTRY, registerCatalog } from '../fixtures/profiles'
 
 /** The fixture catalog (from the Open Fixture Library), loaded once from the server. */
 export const useCatalog = defineStore('catalog', () => {
   const items = ref<CatalogFixture[]>([])
-  const source = ref<api.CatalogFile['source']>(null)
+  /** where the catalog comes from; null until it has loaded */
+  const source = ref<CatalogFile['source'] | null>(null)
   const importedAt = ref('')
   const status = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const error = ref<string | null>(null)

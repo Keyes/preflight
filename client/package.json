@@ -9,6 +9,7 @@
     "test": "vitest run"
   },
   "dependencies": {
+    "@preflight/shared": "*",
     "@babylonjs/core": "^8.0.0",
     "@babylonjs/loaders": "^8.0.0",
     "pinia": "^3.0.0",

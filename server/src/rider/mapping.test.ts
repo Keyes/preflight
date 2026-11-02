@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
-import { catalogFixtures, type CatalogFixture } from '../catalog.js'
+import type { CatalogFixture } from '@preflight/shared'
+import { catalogFixtures } from '../catalog.js'
 import { findByName, resolveMode, resolveType } from './mapping.js'
 
 let catalog: CatalogFixture[]

@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import type { CatalogFixture } from '../api'
+import type { CatalogFixture } from '@preflight/shared'
 import {
   beamAngleDegrees,
   candela,

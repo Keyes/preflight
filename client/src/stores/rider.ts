@@ -1,28 +1,12 @@
 import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
-import type { DraftResult, Fixture, FixtureDraft, FixtureGroup, RiderFile, Similarity } from '../api'
+import { similarityFromPairs, type DraftResult, type Fixture, type FixtureDraft, type FixtureGroup, type RiderFile } from '@preflight/shared'
 import { profileFor } from '../fixtures/profiles'
 import { useRig } from './rig'
 import { useVenues } from './venues'
 
 type Pt = [number, number]
-
-/** The similarity that takes plan points A and B to world points a and b (x, z), as the server's placement module does (with the plan's y flipped: the scene is left-handed). */
-export function similarityFromPairs(planA: Pt, planB: Pt, worldA: Pt, worldB: Pt): Similarity | null {
-  const pdx = planB[0] - planA[0]
-  const pdy = planB[1] - planA[1]
-  const wdx = worldB[0] - worldA[0]
-  const wdz = worldB[1] - worldA[1]
-  const plen = Math.hypot(pdx, pdy)
-  const wlen = Math.hypot(wdx, wdz)
-  if (plen < 1 || wlen < 0.01) return null
-  const scale = wlen / plen
-  const theta = Math.atan2(wdz, wdx) - Math.atan2(-pdy, pdx)
-  const c = Math.cos(theta) * scale
-  const n = Math.sin(theta) * scale
-  return { scale, theta, tx: worldA[0] - (c * planA[0] + n * planA[1]), tz: worldA[1] - (n * planA[0] - c * planA[1]) }
-}
 
 const KEY_STORAGE = 'preflight.visionKey'
 const read = (key: string) => {

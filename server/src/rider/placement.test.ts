@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
-import { facingToWorld, poseFor, rotateYTo, scaleFromStage, similarityFromPairs, toWorld, type Quaternion } from './placement.js'
+import { facingToWorld, poseFor, rotateYTo, scaleFromStage, type Quaternion } from './placement.js'
 
 const near = (a: number, b: number, eps = 1e-6) => assert.ok(Math.abs(a - b) < eps, `${a} is not ${b}`)
 
@@ -13,27 +13,6 @@ function rotate(q: Quaternion, v: [number, number, number]): [number, number, nu
   const tz = 2 * (x * vy - y * vx)
   return [vx + w * tx + (y * tz - z * ty), vy + w * ty + (z * tx - x * tz), vz + w * tz + (x * ty - y * tx)]
 }
-
-test('two points fix scale, turn and shift', () => {
-  const s = similarityFromPairs([100, 200], [300, 200], [-5, 1], [5, 1])
-  near(s.scale, 0.05)
-  near(s.theta, 0)
-  const [x, z] = toWorld(s, [200, 300])
-  near(x, 0)
-  near(z, -4) // 100 px further down the page is 5 m towards -z: the plan's y is flipped
-  const turned = similarityFromPairs([0, 0], [100, 0], [0, 0], [0, 10]) // plan "right" is world +z
-  const [a, b] = toWorld(turned, [100, 100])
-  near(a, 10)
-  near(b, 10)
-  // both reference points land where they were put
-  const ends = similarityFromPairs([842, 1686], [2841, 1686], [-3, 2], [7, 2])
-  const [ax, az] = toWorld(ends, [842, 1686])
-  const [bx, bz] = toWorld(ends, [2841, 1686])
-  near(ax, -3)
-  near(az, 2)
-  near(bx, 7)
-  near(bz, 2)
-})
 
 test('a drawn direction turns with the plan: up the page is world +z when the plan is not turned', () => {
   const s = { scale: 0.01, theta: 0, tx: 0, tz: 0 }

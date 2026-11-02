@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import type { Fixture, FixtureGroup } from '../api'
+import type { Fixture, FixtureGroup } from '@preflight/shared'
 import { FixtureHistory } from './fixtureHistory'
 
 const light = (id: string, x = 0): Fixture => ({

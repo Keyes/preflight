@@ -1,6 +1,6 @@
 import { Quaternion, Vector3 } from '@babylonjs/core'
 import { expect, test } from 'vitest'
-import type { CatalogFixture, Fixture } from '../api'
+import type { CatalogFixture, Fixture } from '@preflight/shared'
 import { profileFor, registerCatalog, travelDegrees } from '../fixtures/profiles'
 import { solveAim, type AimPatch } from './aim'
 import type { FixtureRig } from './FixtureRig'

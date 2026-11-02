@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import { copyFile, readFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { checkGlb } from './model.js'
-import { type Venue, createVenue, deleteVenue, glbPath, updateVenue } from './venues.js'
+import type { Venue } from '@preflight/shared'
+import { createVenue, deleteVenue, glbPath, updateVenue } from './venues.js'
 
 /** What the demo venue starts with besides its model (`samples/demo-club.json`, made by `npm run demo-venue -w server`). */
 export type DemoPreset = Required<Pick<Venue, 'name' | 'atmosphere' | 'crowd' | 'views' | 'fixtures' | 'groups'>>

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { CatalogFixture } from '../api'
+import type { CatalogFixture } from '@preflight/shared'
 import { COLOR_FEATURES, profileFromCatalog } from '../fixtures/profiles'
 import { useCatalog } from '../stores/catalog'
 import { useRig } from '../stores/rig'

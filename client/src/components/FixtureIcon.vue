@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import type { Fixture } from '../api'
+import type { Fixture } from '@preflight/shared'
 import { profileFor } from '../fixtures/profiles'
 
 /** A light in the lists: the outline of its body type (as drawn in the view), in its color, as bright as its dimmer. */

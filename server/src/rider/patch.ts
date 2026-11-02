@@ -1,5 +1,5 @@
 import { readFile } from 'node:fs/promises'
-import type { RiderFile, RiderPatchRow } from './types.js'
+import type { RiderFile, RiderPatchRow } from '@preflight/shared'
 
 interface TextItem {
   str: string

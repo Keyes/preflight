@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import type { Crowd, CrowdZone } from './api'
+import type { Crowd, CrowdZone } from '@preflight/shared'
 import {
   CROWD_ABSORPTION,
   CROWD_HEIGHT,

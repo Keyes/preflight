@@ -12,7 +12,7 @@ import { mkdtemp, mkdir, readdir, readFile, writeFile, copyFile } from 'node:fs/
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { CatalogFixture, CatalogFile, CatalogMode } from '../catalog.js'
+import type { CatalogFixture, CatalogFile, CatalogMode } from '@preflight/shared'
 
 const OUT_DIR = fileURLToPath(new URL('../../catalog/', import.meta.url))
 const REPO_URL = 'https://github.com/OpenLightingProject/open-fixture-library.git'

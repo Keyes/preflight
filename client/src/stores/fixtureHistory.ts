@@ -1,4 +1,4 @@
-import type { Fixture, FixtureGroup } from '../api'
+import type { Fixture, FixtureGroup } from '@preflight/shared'
 
 /** Keeps at most this many steps per venue. */
 const MAX_STEPS = 100

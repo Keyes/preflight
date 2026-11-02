@@ -1,3 +1,5 @@
+import type { FixturePatch } from './venue.js'
+
 /**
  * The rider file: what a venue's tech rider says, in a form pre(f)light can import from. It is the hand-over between reading the
  * rider (a patch table parsed from the PDF's text, a plan read by a vision model or placed by hand) and the import wizard.
@@ -87,4 +89,39 @@ export interface RiderFile {
   issues: string[]
   /** the same for the plan, and where plan and patch disagree: set when the plan is read, replaced when it is read again */
   planIssues?: string[]
+}
+
+/** The lights a rider describes, as drafts the import wizard shows for review (made by buildDrafts on the server). */
+export type DraftStatus = 'ready' | 'unmapped' | 'unplaced' | 'ignored'
+
+export interface FixtureDraft {
+  /** the lamp's id, or the rider number for a patch row the plan does not show */
+  key: string
+  fixId: string
+  lampId?: string
+  name: string
+  profileId?: string
+  /** the catalog's name for the mode */
+  mode?: string
+  patch?: FixturePatch
+  placement?: {
+    position: [number, number, number]
+    mount: 'hanging' | 'standing'
+    rotation: [number, number, number, number]
+    /** what the height was taken from: a truss's underside, the ceiling (measure it), or a stand */
+    height: 'truss' | 'ceiling' | 'stand'
+    /** the truss it hangs from, when there is one */
+    truss?: string
+  }
+  status: DraftStatus
+  /** things to look at before importing: what was assumed, what disagrees */
+  notes: string[]
+}
+
+export interface DraftResult {
+  drafts: FixtureDraft[]
+  /** one group per truss, lights in order from left to right */
+  groups: { name: string; keys: string[] }[]
+  /** lights that need a person's decision, as plain sentences */
+  issues: string[]
 }

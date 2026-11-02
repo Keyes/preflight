@@ -13,27 +13,8 @@ import { convertSkp, converterVersion } from './convert.js'
 import { createDemoVenue } from './demo.js'
 import { requestAllowed } from './origin.js'
 import { HEAD_BYTES, ModelError, type ModelFormat, detectModelFormat, prepareGltfModel } from './model.js'
-import {
-  type CameraView,
-  type FixtureGroup,
-  type FixturePatch,
-  type Atmosphere,
-  type Crowd,
-  type CrowdZone,
-  type Fixture,
-  type Venue,
-  createVenue,
-  deleteVenue,
-  duplicateVenue,
-  getVenue,
-  glbPath,
-  isValidId,
-  listVenues,
-  reorderVenues,
-  skpPath,
-  updateVenue,
-  venueDir,
-} from './venues.js'
+import type { CameraView, FixtureGroup, FixturePatch, Atmosphere, Crowd, CrowdZone, Fixture, Venue } from '@preflight/shared'
+import { createVenue, deleteVenue, duplicateVenue, getVenue, glbPath, isValidId, listVenues, reorderVenues, skpPath, updateVenue, venueDir } from './venues.js'
 
 const PORT = Number(process.env.PORT ?? 3001)
 // Only this machine by default: there is no login. HOST=0.0.0.0 opens it to the network.

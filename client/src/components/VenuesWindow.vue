@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { MODEL_ACCEPT, type Venue } from '../api'
+import type { Venue } from '@preflight/shared'
+import { MODEL_ACCEPT } from '../api'
 import { useTransfer } from '../stores/transfer'
 import { useVenues } from '../stores/venues'
 

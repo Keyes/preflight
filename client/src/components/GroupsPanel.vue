@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import type { FixtureGroup } from '../api'
+import type { FixtureGroup } from '@preflight/shared'
 import { useRig } from '../stores/rig'
 import { useTransfer } from '../stores/transfer'
 import { useVenues } from '../stores/venues'

@@ -23,7 +23,7 @@ import {
   type AbstractMesh,
   type ShaderMaterial,
 } from '@babylonjs/core'
-import type { Fixture } from '../api'
+import type { Fixture } from '@preflight/shared'
 import { beamAngleDegrees, candela, focusDistance, goboSpinTurns, profileFor, strobeHz, travelDegrees } from '../fixtures/profiles'
 import type { Absorber } from '../crowdModel'
 import { createBeamMaterial } from './beamMaterial'

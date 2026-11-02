@@ -1,7 +1,15 @@
-import type { CatalogFixture } from '../catalog.js'
+import {
+  toWorld,
+  type CatalogFixture,
+  type DraftResult,
+  type FixtureDraft,
+  type RiderFile,
+  type RiderLamp,
+  type RiderPatchRow,
+  type Similarity,
+} from '@preflight/shared'
 import { resolveMode, resolveType } from './mapping.js'
-import { poseFor, toWorld, type Quaternion, type Similarity } from './placement.js'
-import type { RiderFile, RiderLamp, RiderPatchRow } from './types.js'
+import { poseFor } from './placement.js'
 
 /**
  * Turns a rider file into the lights it describes, as drafts the import wizard shows for review and then adds to a venue:
@@ -18,40 +26,6 @@ export interface DraftOptions {
   ceilingHeight?: number
   /** how far above the floor a light on a stand sits, meters */
   standHeight?: number
-}
-
-export type DraftStatus = 'ready' | 'unmapped' | 'unplaced' | 'ignored'
-
-export interface FixtureDraft {
-  /** the lamp's id, or the rider number for a patch row the plan does not show */
-  key: string
-  fixId: string
-  lampId?: string
-  name: string
-  profileId?: string
-  /** the catalog's name for the mode */
-  mode?: string
-  patch?: { fixId: string; lampId?: string; universe: number; address: number; truss?: string }
-  placement?: {
-    position: [number, number, number]
-    mount: 'hanging' | 'standing'
-    rotation: Quaternion
-    /** what the height was taken from: a truss's underside, the ceiling (measure it), or a stand */
-    height: 'truss' | 'ceiling' | 'stand'
-    /** the truss it hangs from, when there is one */
-    truss?: string
-  }
-  status: DraftStatus
-  /** things to look at before importing: what was assumed, what disagrees */
-  notes: string[]
-}
-
-export interface DraftResult {
-  drafts: FixtureDraft[]
-  /** one group per truss, lights in order from left to right */
-  groups: { name: string; keys: string[] }[]
-  /** lights that need a person's decision, as plain sentences */
-  issues: string[]
 }
 
 /** How a light is mounted, by its patch name, where the plan's symbol position alone does not say. */

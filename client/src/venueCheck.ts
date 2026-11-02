@@ -1,4 +1,4 @@
-import type { Fixture } from './api'
+import type { Fixture } from '@preflight/shared'
 
 export interface Box {
   min: [number, number, number]

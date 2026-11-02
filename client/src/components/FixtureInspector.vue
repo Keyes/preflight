@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import InfoTip from './InfoTip.vue'
 import ValueField from './ValueField.vue'
-import type { Fixture } from '../api'
+import type { Fixture } from '@preflight/shared'
 import { FOCUS_FAR, FOCUS_NEAR, beamAngleDegrees, focusDistance, goboSpinTurns, profileFor, strobeHz, travelDegrees } from '../fixtures/profiles'
 import { GOBOS, goboIndex, goboThumbnails, goboValue } from '../scene/goboLibrary'
 import { MAX_GOBO_LIGHTS, MAX_SHADOW_LIGHTS } from '../scene/FixtureRig'

@@ -8,17 +8,18 @@
   },
   "workspaces": [
     "client",
-    "server"
+    "server",
+    "shared"
   ],
   "scripts": {
     "dev": "npm-run-all --parallel dev:server dev:client",
     "dev:client": "npm run dev -w client",
     "dev:server": "npm run dev -w server",
-    "format": "prettier --write \"{client,server}/src/**/*.{ts,vue,css}\" \"e2e/**/*.ts\" \"*.js\" client/vite.config.ts",
-    "format:check": "prettier --check \"{client,server}/src/**/*.{ts,vue,css}\" \"e2e/**/*.ts\" \"*.js\" client/vite.config.ts",
+    "format": "prettier --write \"{client,server,shared}/src/**/*.{ts,vue,css}\" \"e2e/**/*.ts\" \"*.js\" client/vite.config.ts",
+    "format:check": "prettier --check \"{client,server,shared}/src/**/*.{ts,vue,css}\" \"e2e/**/*.ts\" \"*.js\" client/vite.config.ts",
     "lint": "eslint .",
     "knip": "knip",
-    "check": "npm run format:check && npm run lint && npm run knip && npm run typecheck -w server && tsc --noEmit -p e2e && npm test -w server && npm test -w client && npm run build -w client",
+    "check": "npm run format:check && npm run lint && npm run knip && npm run typecheck -w shared && npm run typecheck -w server && tsc --noEmit -p e2e && npm test -w shared && npm test -w server && npm test -w client && npm run build -w client",
     "test:e2e": "playwright test -c e2e"
   },
   "devDependencies": {

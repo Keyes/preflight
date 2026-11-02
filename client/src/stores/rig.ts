@@ -1,7 +1,7 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
-import type { Fixture, FixtureGroup } from '../api'
+import type { Fixture, FixtureGroup } from '@preflight/shared'
 import { GENERIC_ID, GENERIC_MOVING_HEAD, profileFor } from '../fixtures/profiles'
 import type { AimPatch } from '../scene/aim'
 import { FixtureHistory } from './fixtureHistory'

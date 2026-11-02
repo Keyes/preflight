@@ -1,5 +1,5 @@
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core'
-import type { Fixture } from '../api'
+import type { Fixture } from '@preflight/shared'
 import { profileFor, travelDegrees } from '../fixtures/profiles'
 import type { FixtureRig } from './FixtureRig'
 

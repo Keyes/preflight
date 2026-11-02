@@ -1,5 +1,5 @@
 import { ref } from 'vue'
-import type { CatalogFixture, CatalogMode } from '../api'
+import type { CatalogFixture, CatalogMode } from '@preflight/shared'
 import { lensStrip, modelFor, type ModelSpec } from '../scene/fixtureModel'
 
 /**

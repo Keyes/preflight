@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict'
 import { before, test } from 'node:test'
-import { catalogFixtures, type CatalogFixture } from '../catalog.js'
+import type { CatalogFixture, RiderFile, RiderLamp, RiderPatchRow } from '@preflight/shared'
+import { catalogFixtures } from '../catalog.js'
 import { buildDrafts } from './draft.js'
-import type { RiderFile, RiderLamp, RiderPatchRow } from './types.js'
 
 let catalog: CatalogFixture[]
 before(async () => {

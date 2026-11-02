@@ -7,7 +7,7 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { createCanvas } from '@napi-rs/canvas'
-import type { RiderFile } from '../rider/types.js'
+import type { RiderFile } from '@preflight/shared'
 import { renderPage } from '../rider/vision/render.js'
 
 if (process.argv.length < 5) {

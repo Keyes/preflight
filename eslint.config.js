@@ -37,7 +37,8 @@ export default defineConfig(
   },
   {
     // Request bodies and responses are untyped JSON, and these files read them field by field. Until they are checked
-    // against schemas (docs/architecture.md, known problems 4 and 5), the rules about untyped values are off here only.
+    // against schemas (see "The server's index.ts does three jobs" in docs/architecture.md), the rules about untyped values
+    // are off here only.
     files: ['server/src/index.ts', 'server/src/rider/api.ts', 'client/src/api.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-argument': 'off',
@@ -48,7 +49,7 @@ export default defineConfig(
     },
   },
   { files: ['client/**'], languageOptions: { globals: globals.browser } },
-  { files: ['server/**', '*.js'], languageOptions: { globals: globals.node } },
+  { files: ['server/**', 'shared/**', '*.js'], languageOptions: { globals: globals.node } },
   // browser tests run in Node, and hand some functions to the page
   { files: ['e2e/**'], languageOptions: { globals: { ...globals.node, ...globals.browser } } },
   // Config files are not part of a tsconfig, so they get the rules that need no type information.

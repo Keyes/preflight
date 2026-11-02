@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import type { Fixture } from '../api'
+import type { Fixture } from '@preflight/shared'
 import { profileFor } from '../fixtures/profiles'
 import { useCrowd } from '../stores/crowd'
 import { useLayout } from '../stores/layout'

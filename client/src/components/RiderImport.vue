@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import type { FixtureDraft } from '../api'
+import type { FixtureDraft } from '@preflight/shared'
 import { useCatalog } from '../stores/catalog'
 import { useRider, type Flag, type RiderStep } from '../stores/rider'
 import { useVenues } from '../stores/venues'
