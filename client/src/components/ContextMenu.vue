@@ -5,8 +5,11 @@ import type { MenuItem } from './contextMenu'
 defineProps<{ x: number; y: number; items: MenuItem[] }>()
 const emit = defineEmits<{ (e: 'close'): void }>()
 
+/** Esc closes the menu and does nothing else (it would deselect too), so it is caught before the app's shortcuts see it. */
 function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape') emit('close')
+  if (event.key !== 'Escape') return
+  event.stopPropagation()
+  emit('close')
 }
 function close() {
   emit('close')
@@ -17,13 +20,13 @@ function run(item: MenuItem) {
 }
 
 onMounted(() => {
-  window.addEventListener('keydown', onKeydown)
+  window.addEventListener('keydown', onKeydown, true)
   window.addEventListener('blur', close)
   // Any click elsewhere closes the menu; clicks inside it are stopped below.
   window.addEventListener('pointerdown', close)
 })
 onBeforeUnmount(() => {
-  window.removeEventListener('keydown', onKeydown)
+  window.removeEventListener('keydown', onKeydown, true)
   window.removeEventListener('blur', close)
   window.removeEventListener('pointerdown', close)
 })

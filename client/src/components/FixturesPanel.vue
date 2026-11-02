@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import type { Fixture } from '@preflight/shared'
 import { profileFor } from '../fixtures/profiles'
-import { useCrowd } from '../stores/crowd'
-import { useLayout } from '../stores/layout'
+import { keysFor, MOD } from '../input/keymap'
+import { useInteraction } from '../stores/interaction'
 import { useRider } from '../stores/rider'
 import { useRig } from '../stores/rig'
-import { useSettings } from '../stores/settings'
 import { useTransfer } from '../stores/transfer'
 import { useVenues } from '../stores/venues'
 import ContextMenu from './ContextMenu.vue'
@@ -17,17 +16,13 @@ import SidebarSection from './SidebarSection.vue'
 
 const store = useVenues()
 const rig = useRig()
-const crowd = useCrowd()
-const layout = useLayout()
-const settings = useSettings()
+const interaction = useInteraction()
 const transfer = useTransfer()
 const riderImport = useRider()
 
 const menu = ref<{ x: number; y: number; id: string } | null>(null)
-/** The key that adds to a selection by clicking (on a Mac Ctrl-click is a right click). */
-const addKey = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'
 const renamingId = ref<string | null>(null)
-const fixturesTip = `Click a light to select it. ${addKey}-click adds or removes one, Shift-click selects a range, ${addKey}+A selects all and Esc clears. Right-click a light to rename, duplicate, copy it to another venue or delete it. “+ Place light” opens the fixture library, then you click a truss, ceiling or the floor.`
+const fixturesTip = `Click a light to select it. ${MOD}-click adds or removes one, Shift-click selects a range, ${keysFor('selectAll')} selects all and ${keysFor('escape')} clears. Right-click a light to rename, duplicate, copy it to another venue or delete it. “+ Place light” opens the fixture library, then you click a truss, ceiling or the floor.`
 
 /** The fixture type, shown when hovering a row. */
 function typeName(f: Fixture) {
@@ -128,62 +123,6 @@ function commitRename(id: string, value: string) {
   const name = value.trim()
   if (name) rig.update(id, { name })
 }
-
-/** The key is going into a text field (so it is not a shortcut), as opposed to a slider, checkbox or color field. */
-function isTyping(target: HTMLElement | null) {
-  if (!target) return false
-  if (target.isContentEditable || target.tagName === 'TEXTAREA') return true
-  return target.tagName === 'INPUT' && !['range', 'checkbox', 'radio', 'color', 'button'].includes((target as HTMLInputElement).type)
-}
-
-function onKeydown(event: KeyboardEvent) {
-  const target = event.target as HTMLElement | null
-  if (!rig.pickerOpen && (event.ctrlKey || event.metaKey) && !event.altKey && !isTyping(target)) {
-    const key = event.key.toLowerCase()
-    if (key === 'z') {
-      event.preventDefault()
-      if (event.shiftKey) rig.redo()
-      else rig.undo()
-      return
-    }
-    if (key === 'y') {
-      event.preventDefault()
-      rig.redo()
-      return
-    }
-  }
-  if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
-  if (rig.pickerOpen) return // the picker handles its own keys
-  if ((event.ctrlKey || event.metaKey) && !event.altKey && (event.key === 'a' || event.key === 'A')) {
-    event.preventDefault()
-    rig.selectMany(rig.fixtures.map((f) => f.id))
-    return
-  }
-  if (event.ctrlKey || event.metaKey || event.altKey) return
-  if (event.key === 'Escape') {
-    if (crowd.picking) crowd.cancelPicking()
-    else if (rig.aim.armed) rig.cancelAim()
-    else if (rig.placing) rig.togglePlacing()
-    else rig.select(null)
-  } else if (event.key === '?') {
-    layout.togglePopover('help')
-  } else if (event.key === 'c' || event.key === 'C') {
-    crowd.setShown(!crowd.crowd.shown) // C shows or hides the crowd
-  } else if (event.key === 'p' || event.key === 'P') {
-    settings.animate = !settings.animate // P pauses every animation
-  } else if (rig.selectedIds.length && (event.key === 't' || event.key === 'T')) {
-    rig.toggleAim() // T for target (A is the camera's)
-  } else if (rig.selectedIds.length && (event.key === 'g' || event.key === 'G')) {
-    rig.gizmoMode = 'move'
-  } else if (rig.selectedIds.length && (event.key === 'r' || event.key === 'R')) {
-    rig.gizmoMode = 'rotate'
-  } else if ((event.key === 'Delete' || event.key === 'Backspace') && rig.selectedIds.length) {
-    deleteSelection()
-  }
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>
@@ -191,11 +130,11 @@ onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
     <template #actions>
       <button
         class="primary"
-        :class="{ on: rig.placing }"
-        :title="rig.placing ? 'Stop placing (Esc)' : 'Pick a fixture, then click where it hangs'"
+        :class="{ on: interaction.is('place') }"
+        :title="interaction.is('place') ? `Stop placing (${keysFor('escape')})` : 'Pick a fixture, then click where it hangs'"
         @click="rig.togglePlacing()"
       >
-        {{ rig.placing ? 'Cancel' : '+ Place light' }}
+        {{ interaction.is('place') ? 'Cancel' : '+ Place light' }}
       </button>
       <button class="more" title="More ways to add lights" aria-label="More ways to add lights" aria-haspopup="menu" @click="openMore">
         <svg viewBox="0 0 24 24" width="15" height="15" fill="currentColor" aria-hidden="true">

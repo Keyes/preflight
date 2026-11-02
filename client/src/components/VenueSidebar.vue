@@ -78,7 +78,7 @@ const sizeText = computed(() =>
     </p>
     <p v-if="store.error" class="error">{{ store.error }}</p>
 
-    <!-- The venue's contents in three pages. Hidden pages stay mounted (v-show): their panels own keyboard shortcuts. -->
+    <!-- The venue's contents in three pages. Hidden pages stay mounted (v-show), so they keep their scroll position and filter. -->
     <nav v-if="store.current?.status === 'ready'" class="tabs" role="tablist" aria-label="Venue contents">
       <button v-for="t in tabs" :key="t.id" role="tab" :aria-selected="layout.tab === t.id" :class="{ on: layout.tab === t.id }" @click="layout.tab = t.id">
         {{ t.label }}<span v-if="t.count" class="tabcount">{{ t.count }}</span>

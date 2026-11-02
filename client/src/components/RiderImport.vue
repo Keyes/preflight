@@ -2,10 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import type { FixtureDraft } from '@preflight/shared'
 import { useCatalog } from '../stores/catalog'
+import { useInteraction } from '../stores/interaction'
 import { useRider, type Flag, type RiderStep } from '../stores/rider'
 import { useVenues } from '../stores/venues'
 
 const rider = useRider()
+const interaction = useInteraction()
 const catalog = useCatalog()
 const venues = useVenues()
 
@@ -21,6 +23,8 @@ const done = ref('')
 
 const canCalibrate = computed(() => !!rider.rider?.plan)
 const canReview = computed(() => !!rider.similarity)
+/** The venue point (0 or 1) the next click in the 3D view sets, or null. */
+const pickingPoint = computed(() => (interaction.mode?.kind === 'riderPoint' ? interaction.mode.index : null))
 
 /** A step is done once the next one can start (the last one once its lights are imported). */
 function stepDone(id: RiderStep) {
@@ -43,7 +47,7 @@ function go(step: RiderStep) {
   if (step === 'calibrate' && !canCalibrate.value) return
   if (step === 'review' && !canReview.value) return
   rider.step = step
-  rider.pickingWorld = null
+  interaction.cancel('riderPoint')
   rider.select([])
   if (step === 'review') void rider.refreshDrafts()
 }
@@ -283,8 +287,8 @@ const venueName = computed(() => venues.current?.name ?? '')
           <li v-for="i in [0, 1]" :key="i" :class="{ on: activePoint === i }">
             <label><input v-model="activePoint" type="radio" :value="i" /> Point {{ 'AB'[i] }}</label>
             <span class="coords">{{ rider.planPoints[i] ? `plan ${rider.planPoints[i]![0]}, ${rider.planPoints[i]![1]}` : 'click it on the plan' }}</span>
-            <button :class="{ armed: rider.pickingWorld === i }" @click="rider.pickingWorld = rider.pickingWorld === i ? null : i">
-              {{ rider.pickingWorld === i ? 'Click in the 3D view…' : 'Pick in venue' }}
+            <button :class="{ armed: pickingPoint === i }" @click="rider.pickWorld(i)">
+              {{ pickingPoint === i ? 'Click in the 3D view…' : 'Pick in venue' }}
             </button>
             <span class="coords">{{
               rider.worldPoints[i] ? `venue ${rider.worldPoints[i]![0].toFixed(2)}, ${rider.worldPoints[i]![1].toFixed(2)} m` : 'not set'

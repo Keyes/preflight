@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, ref } from 'vue'
 import type { CameraView } from '@preflight/shared'
 import { useCameraBridge } from '../stores/camera'
 import { useVenues } from '../stores/venues'
@@ -87,21 +87,6 @@ async function mutate(change: (views: CameraView[]) => CameraView[]) {
     error.value = (e as Error).message
   }
 }
-
-// Number keys 1–9 jump to the matching saved view, unless the user is typing.
-function onKeydown(event: KeyboardEvent) {
-  const target = event.target as HTMLElement | null
-  if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
-  if (event.ctrlKey || event.metaKey || event.altKey) return
-  const n = Number(event.key)
-  if (n >= 1 && n <= 9) {
-    const view = store.currentViews[n - 1]
-    if (view) jump(view)
-  }
-}
-
-onMounted(() => window.addEventListener('keydown', onKeydown))
-onBeforeUnmount(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <template>

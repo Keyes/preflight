@@ -1,86 +1,44 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
+import { KEYMAP, keysFor, keysOf, type HelpGroup } from '../input/keymap'
 import { useLayout } from '../stores/layout'
 
 const layout = useLayout()
 const open = computed(() => layout.popover === 'help')
 const root = ref<HTMLElement>()
 
-const mod = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'
-
-/** Every shortcut, by what it is for. The README's controls table says the same in more words. */
-const groups = [
-  {
-    title: 'Camera',
-    keys: [
-      ['W A S D', 'Move (or the arrow keys)'],
-      ['Q / E', 'Down / up'],
-      ['Shift', 'Move faster'],
-      ['Drag', 'Look around'],
-      ['1 – 9', 'Jump to a saved view'],
-    ],
-  },
-  {
-    title: 'Selecting',
-    keys: [
-      ['Click', 'Select a light'],
-      [`${mod}-click`, 'Add to or take out of the selection'],
-      ['Shift-click', 'Select a range in the list'],
-      [`${mod} A`, 'Select all lights'],
-      ['Esc', 'Cancel, or deselect'],
-    ],
-  },
-  {
-    title: 'Editing',
-    keys: [
-      ['G', 'Move gizmo'],
-      ['R', 'Rotate gizmo (Shift snaps to 5°)'],
-      ['T', 'Aim: then click a surface'],
-      ['Delete', 'Delete the selected lights'],
-      [`${mod} Z`, 'Undo'],
-      [`Shift ${mod} Z`, 'Redo'],
-    ],
-  },
-  {
-    title: 'View',
-    keys: [
-      ['C', 'Show or hide the crowd'],
-      ['P', 'Pause or resume animations'],
-      ['?', 'This list'],
-    ],
-  },
-]
+const GROUPS: readonly HelpGroup[] = ['Camera', 'Selecting', 'Editing', 'View']
+/** Every shortcut and gesture, by what it is for. The README's controls table says the same in more words. */
+const groups = GROUPS.map((title) => ({ title, entries: KEYMAP.filter((e) => e.group === title) }))
 
 function onPointerDown(event: PointerEvent) {
   if (open.value && root.value && !root.value.contains(event.target as Node)) layout.popover = null
 }
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && open.value) layout.popover = null
-}
-onMounted(() => {
-  window.addEventListener('pointerdown', onPointerDown)
-  window.addEventListener('keydown', onKeydown)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('pointerdown', onPointerDown)
-  window.removeEventListener('keydown', onKeydown)
-})
+// Esc closes it through the keymap.
+onMounted(() => window.addEventListener('pointerdown', onPointerDown))
+onBeforeUnmount(() => window.removeEventListener('pointerdown', onPointerDown))
 </script>
 
 <template>
   <div ref="root" class="help">
-    <button class="icon" :class="{ active: open }" title="Keyboard shortcuts (?)" aria-label="Keyboard shortcuts" @click="layout.togglePopover('help')">
+    <button
+      class="icon"
+      :class="{ active: open }"
+      :title="`Keyboard shortcuts (${keysFor('help')})`"
+      aria-label="Keyboard shortcuts"
+      @click="layout.togglePopover('help')"
+    >
       ?
     </button>
     <div v-if="open" class="panel" role="dialog" aria-label="Keyboard shortcuts">
       <section v-for="g in groups" :key="g.title">
         <h2>{{ g.title }}</h2>
         <dl>
-          <template v-for="[key, what] in g.keys" :key="key">
+          <template v-for="entry in g.entries" :key="entry.what">
             <dt>
-              <kbd>{{ key }}</kbd>
+              <kbd>{{ keysOf(entry) }}</kbd>
             </dt>
-            <dd>{{ what }}</dd>
+            <dd>{{ entry.what }}</dd>
           </template>
         </dl>
       </section>

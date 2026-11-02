@@ -15,6 +15,8 @@ import Viewer from './components/Viewer.vue'
 import SettingsPanel from './components/SettingsPanel.vue'
 import VenueSidebar from './components/VenueSidebar.vue'
 import VenuesWindow from './components/VenuesWindow.vue'
+import { KEYMAP, keysFor, keysOf } from './input/keymap'
+import { useShortcuts } from './input/shortcuts'
 import { useCameraBridge } from './stores/camera'
 import { useCatalog } from './stores/catalog'
 import { useLayout } from './stores/layout'
@@ -32,6 +34,10 @@ const transfer = useTransfer()
 const riderImport = useRider()
 const loading = ref(false)
 const loadError = ref<string | null>(null)
+
+useShortcuts()
+/** The keys the empty inspector lists; the help panel has all of them. */
+const briefKeys = KEYMAP.filter((e) => e.brief)
 
 const url = computed(() => {
   const venue = store.current
@@ -167,24 +173,14 @@ onMounted(async () => {
           <p class="lead">No light selected</p>
           <p>Click a light in the view or the list to edit it, or “+ Place light” to add one.</p>
           <dl class="keys">
-            <dt>W A S D</dt>
-            <dd>Move</dd>
-            <dt>Q / E</dt>
-            <dd>Down / up</dd>
-            <dt>Shift</dt>
-            <dd>Move faster</dd>
-            <dt>Drag</dt>
-            <dd>Look around</dd>
-            <dt>1 – 9</dt>
-            <dd>Saved views</dd>
-            <dt>G / R / T</dt>
-            <dd>Move, rotate, aim a light</dd>
-            <dt>C</dt>
-            <dd>Show or hide the crowd</dd>
-            <dt>P</dt>
-            <dd>Pause animations</dd>
+            <template v-for="entry in briefKeys" :key="entry.what">
+              <dt>{{ keysOf(entry) }}</dt>
+              <dd>{{ entry.what }}</dd>
+            </template>
           </dl>
-          <p class="more">All shortcuts: press <kbd>?</kbd></p>
+          <p class="more">
+            All shortcuts: press <kbd>{{ keysFor('help') }}</kbd>
+          </p>
         </div>
       </template>
     </aside>

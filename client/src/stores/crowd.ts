@@ -2,11 +2,13 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Crowd, CrowdZone } from '@preflight/shared'
 import { DEFAULT_CROWD, MIN_ZONE_SIDE, requestedPeople, totalPeople, zoneCounts } from '../crowdModel'
+import { useInteraction } from './interaction'
 import { useVenues } from './venues'
 
 /** The crowd of the open venue: its zones and options (saved with the venue), and the clicks that draw and aim zones. */
 export const useCrowd = defineStore('crowd', () => {
   const venues = useVenues()
+  const interaction = useInteraction()
 
   const crowd = computed<Crowd>(() => venues.current?.crowd ?? DEFAULT_CROWD)
   const zones = computed(() => crowd.value.zones)
@@ -17,15 +19,8 @@ export const useCrowd = defineStore('crowd', () => {
 
   /** The zone whose outline shows in the venue. */
   const selectedId = ref<string | null>(null)
-  /** A zone is being drawn: the first corner is set once it is clicked (a point on a surface, meters). */
-  const drawing = ref<{ first: [number, number, number] | null } | null>(null)
-  /** The zone waiting for a click on the point its people should face. */
-  const facingFor = ref<string | null>(null)
   /** What the last click that could not make a zone said. */
   const message = ref('')
-
-  /** The next click in the venue is for the crowd (a corner or a facing point). */
-  const picking = computed(() => !!drawing.value || !!facingFor.value)
 
   /** Changes the crowd of the open venue (a copy with the change, so the saved object is never edited in place). */
   function write(change: (next: Crowd) => void) {
@@ -48,26 +43,26 @@ export const useCrowd = defineStore('crowd', () => {
   }
 
   function startDrawing() {
-    facingFor.value = null
     message.value = ''
-    drawing.value = { first: null }
+    interaction.start({ kind: 'zone', first: null })
+  }
+
+  /** The first corner was clicked: the next click sets the opposite one. */
+  function setFirstCorner(point: [number, number, number]) {
+    if (interaction.is('zone')) interaction.start({ kind: 'zone', first: point })
   }
 
   function startFacing(zoneId: string) {
-    drawing.value = null
     message.value = ''
-    facingFor.value = zoneId
-  }
-
-  function cancelPicking() {
-    drawing.value = null
-    facingFor.value = null
+    interaction.start({ kind: 'facing', zoneId })
   }
 
   /** The second corner was clicked: makes the zone (too small a rectangle is refused). */
   function finishZone(second: [number, number]) {
-    const first = drawing.value?.first
-    drawing.value = null
+    const drawing = interaction.mode
+    if (drawing?.kind !== 'zone') return
+    interaction.cancel()
+    const first = drawing.first
     if (!first) return
     if (Math.abs(second[0] - first[0]) < MIN_ZONE_SIDE || Math.abs(second[1] - first[2]) < MIN_ZONE_SIDE) {
       message.value = `A zone needs at least ${MIN_ZONE_SIDE} m on each side.`
@@ -94,7 +89,7 @@ export const useCrowd = defineStore('crowd', () => {
   }
 
   function setFacing(zoneId: string, facing: [number, number] | null) {
-    facingFor.value = null
+    interaction.cancel('facing')
     write((c) => {
       const zone = c.zones.find((z) => z.id === zoneId)
       if (zone) zone.facing = facing
@@ -129,18 +124,15 @@ export const useCrowd = defineStore('crowd', () => {
     people,
     requested,
     selectedId,
-    drawing,
-    facingFor,
     message,
-    picking,
     setShown,
     setDensity,
     setMotion,
     setIntensity,
     addZones,
     startDrawing,
+    setFirstCorner,
     startFacing,
-    cancelPicking,
     finishZone,
     setFacing,
     renameZone,

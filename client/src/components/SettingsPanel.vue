@@ -56,18 +56,9 @@ const root = ref<HTMLElement>()
 function onPointerDown(event: PointerEvent) {
   if (open.value && root.value && !root.value.contains(event.target as Node)) layout.popover = null
 }
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === 'Escape' && open.value) layout.popover = null
-}
-
-onMounted(() => {
-  window.addEventListener('pointerdown', onPointerDown)
-  window.addEventListener('keydown', onKeydown)
-})
-onBeforeUnmount(() => {
-  window.removeEventListener('pointerdown', onPointerDown)
-  window.removeEventListener('keydown', onKeydown)
-})
+// Esc closes it through the keymap.
+onMounted(() => window.addEventListener('pointerdown', onPointerDown))
+onBeforeUnmount(() => window.removeEventListener('pointerdown', onPointerDown))
 </script>
 
 <template>

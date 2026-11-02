@@ -35,6 +35,7 @@ import {
 } from '@babylonjs/core'
 import '@babylonjs/loaders/glTF'
 import { profilesVersion } from '../fixtures/profiles'
+import { CAMERA_KEYS } from '../input/keymap'
 import { solveAim } from '../scene/aim'
 import { Crowd as CrowdScene } from '../scene/Crowd'
 import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
@@ -43,6 +44,7 @@ import { captureCanvas, planShot, SHOT_ASPECT } from '../scene/screenshot'
 import { useCameraBridge, type CameraState } from '../stores/camera'
 import { crowdAbsorbers } from '../crowdModel'
 import { useCrowd } from '../stores/crowd'
+import { useInteraction } from '../stores/interaction'
 import { useRider } from '../stores/rider'
 import { useRig } from '../stores/rig'
 import { useVenueBox } from '../stores/venueBox'
@@ -76,6 +78,7 @@ const venueBox = useVenueBox()
 const crowdStore = useCrowd()
 const riderStore = useRider()
 const venues = useVenues()
+const interaction = useInteraction()
 const canvas = ref<HTMLCanvasElement>()
 let engine: Engine | undefined
 let scene: Scene | undefined
@@ -353,12 +356,12 @@ onMounted(() => {
   camera.speed = WALK_SPEED
   camera.inertia = 0.75
   camera.angularSensibility = 2500
-  camera.keysUp = [87, 38] // W, ↑
-  camera.keysDown = [83, 40] // S, ↓
-  camera.keysLeft = [65, 37] // A, ←
-  camera.keysRight = [68, 39] // D, →
-  camera.keysUpward = [69] // E
-  camera.keysDownward = [81] // Q
+  camera.keysUp = [...CAMERA_KEYS.forward]
+  camera.keysDown = [...CAMERA_KEYS.back]
+  camera.keysLeft = [...CAMERA_KEYS.left]
+  camera.keysRight = [...CAMERA_KEYS.right]
+  camera.keysUpward = [...CAMERA_KEYS.up]
+  camera.keysDownward = [...CAMERA_KEYS.down]
   camera.attachControl(canvas.value!, true)
   canvas.value!.addEventListener('pointerleave', hideAimCursor)
 
@@ -470,18 +473,28 @@ onMounted(() => {
   }
 
   scene.onPointerObservable.add((info) => {
+    const mode = interaction.mode
     if (info.type === PointerEventTypes.POINTERMOVE) {
-      if (rig.aim.armed || crowdStore.picking || riderStore.pickingWorld !== null) updateAimCursor()
-      if (crowdStore.drawing?.first) updateZonePreview()
+      if (showsAimCursor()) updateAimCursor()
+      if (mode?.kind === 'zone' && mode.first) updateZonePreview(mode.first)
     }
     if (info.type !== PointerEventTypes.POINTERTAP || info.event.button !== 0 || !scene) return
-    if (riderStore.pickingWorld !== null) return riderPick()
-    if (riderMarkerClick((info.event as PointerEvent).ctrlKey || (info.event as PointerEvent).metaKey || (info.event as PointerEvent).shiftKey)) return
-    if (crowdStore.picking) return crowdClick()
-    if (rig.placing) return placeFixture()
-    if (rig.aim.armed) return aimAtPointer()
-    const id = fixtureRig?.fixtureIdOf(info.pickInfo?.pickedMesh)
+    // A click mode takes the click; otherwise it selects (a rider marker first, while the rider wizard shows them).
+    switch (mode?.kind) {
+      case 'place':
+        return placeFixture()
+      case 'aim':
+        return aimAtPointer()
+      case 'zone':
+        return zoneClick(mode.first)
+      case 'facing':
+        return facingClick(mode.zoneId)
+      case 'riderPoint':
+        return riderPick()
+    }
     const e = info.event as PointerEvent
+    if (riderMarkerClick(e.ctrlKey || e.metaKey || e.shiftKey)) return
+    const id = fixtureRig?.fixtureIdOf(info.pickInfo?.pickedMesh)
     if (e.ctrlKey || e.metaKey || e.shiftKey) {
       if (id) rig.toggle(id) // adding to the selection never clears it by clicking empty space
     } else {
@@ -564,19 +577,21 @@ function planePointUnderPointer(y: number): Vector3 | null {
   return t > 0 ? ray.origin.add(ray.direction.scale(t)) : null
 }
 
-/** A click while a crowd zone is being drawn or aimed: a corner, or the point the people face. */
-function crowdClick() {
-  const drawing = crowdStore.drawing
-  if (crowdStore.facingFor) {
+/** A click while a crowd zone is being drawn: the first corner on a surface, then the opposite one at the same height. */
+function zoneClick(first: [number, number, number] | null) {
+  if (!first) {
     const point = surfaceUnderPointer()
-    if (point) crowdStore.setFacing(crowdStore.facingFor, [point.x, point.z])
-  } else if (drawing && !drawing.first) {
-    const point = surfaceUnderPointer()
-    if (point) drawing.first = point.asArray()
-  } else if (drawing?.first) {
-    const point = planePointUnderPointer(drawing.first[1])
+    if (point) crowdStore.setFirstCorner(point.asArray())
+  } else {
+    const point = planePointUnderPointer(first[1])
     if (point) crowdStore.finishZone([point.x, point.z])
   }
+}
+
+/** A click on the point the people in a zone should face. */
+function facingClick(zoneId: string) {
+  const point = surfaceUnderPointer()
+  if (point) crowdStore.setFacing(zoneId, [point.x, point.z])
 }
 
 // --- tech rider import: a point asked for, the ceiling, and a preview of where the lights would go ----------------
@@ -950,9 +965,7 @@ function rectangle(
   return mesh
 }
 
-function updateZonePreview() {
-  const first = crowdStore.drawing?.first
-  if (!first) return
+function updateZonePreview(first: [number, number, number]) {
   const point = planePointUnderPointer(first[1])
   if (!point) return
   zonePreview = rectangle(zonePreview, 'crowd-preview', first[0], first[2], point.x, point.z, first[1] + 0.03, new Color3(1, 0.85, 0.5))
@@ -1026,6 +1039,11 @@ function hideAimCursor() {
   aimCursor?.setEnabled(false)
 }
 
+/** The crosshair on the surface shows in every click mode but placing, which has only the crosshair pointer. */
+function showsAimCursor() {
+  return !!interaction.mode && interaction.mode.kind !== 'place'
+}
+
 function updateAimCursor() {
   if (!scene || !venue || !camera) return
   const cursor = ensureAimCursor()
@@ -1075,15 +1093,7 @@ function placeFixture() {
     unit.y < -0.9999
       ? Quaternion.RotationAxis(Vector3.Right(), Math.PI) // exactly upside down: the shortest-arc turn is ambiguous
       : Quaternion.FromUnitVectorsToRef(Vector3.Up(), unit, new Quaternion())
-  const choice = rig.pending
-  rig.add({
-    position: point.asArray(),
-    mount: unit.y < 0 ? 'hanging' : 'standing',
-    rotation: rotation.asArray(),
-    ...(choice ? { profileId: choice.profileId, ...(choice.mode ? { mode: choice.mode } : {}) } : {}),
-  })
-  rig.placing = false
-  rig.pending = null
+  rig.placeAt({ position: point.asArray(), mount: unit.y < 0 ? 'hanging' : 'standing', rotation: rotation.asArray() })
 }
 
 // --- rotation snapping, tick marks and readout --------------------------------
@@ -1386,7 +1396,7 @@ watch(
   { flush: 'post' },
 )
 watch(
-  () => rig.placing || rig.aim.armed || crowdStore.picking || riderStore.pickingWorld !== null,
+  () => interaction.mode !== null,
   (crosshair) => {
     if (canvas.value) canvas.value.style.cursor = crosshair ? 'crosshair' : ''
   },
@@ -1402,15 +1412,12 @@ watch(
 )
 watch(() => [crowdStore.selectedId, crowdStore.zones], updateZoneOutline, { deep: true })
 watch(
-  () => crowdStore.drawing?.first,
+  () => (interaction.mode?.kind === 'zone' ? interaction.mode.first : null),
   (first) => {
     if (!first) zonePreview?.setEnabled(false)
   },
 )
-watch(
-  () => rig.aim.armed || crowdStore.picking || riderStore.pickingWorld !== null,
-  (on) => (on ? updateAimCursor() : hideAimCursor()),
-)
+watch(showsAimCursor, (on) => (on ? updateAimCursor() : hideAimCursor()))
 watch(() => [rig.aim.anchor, rig.aimActive], updateAimMarker)
 watch(
   () => settings.ambient,

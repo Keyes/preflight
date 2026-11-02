@@ -3,6 +3,7 @@ import { defineStore } from 'pinia'
 import * as api from '../api'
 import { similarityFromPairs, type DraftResult, type Fixture, type FixtureDraft, type FixtureGroup, type RiderFile } from '@preflight/shared'
 import { profileFor } from '../fixtures/profiles'
+import { useInteraction } from './interaction'
 import { useRig } from './rig'
 import { useVenues } from './venues'
 
@@ -30,6 +31,7 @@ export type RiderStep = 'load' | 'calibrate' | 'review'
 export const useRider = defineStore('rider', () => {
   const venues = useVenues()
   const rig = useRig()
+  const interaction = useInteraction()
 
   const open = ref(false)
   const step = ref<RiderStep>('load')
@@ -43,8 +45,6 @@ export const useRider = defineStore('rider', () => {
   const planImage = ref<{ url: string; crop: [number, number, number, number] } | null>(null)
   const planPoints = ref<(Pt | null)[]>([null, null])
   const worldPoints = ref<(Pt | null)[]>([null, null])
-  /** Which world point the next click in the venue sets (0 or 1), or null when the viewer is not asked. */
-  const pickingWorld = ref<number | null>(null)
   /** Set by the viewer: the height of the first surface above (x, z), or null where there is none. */
   const ceilingAt = ref<((x: number, z: number) => number | null) | null>(null)
 
@@ -101,7 +101,7 @@ export const useRider = defineStore('rider', () => {
     planImage.value = null
     planPoints.value = [null, null]
     worldPoints.value = [null, null]
-    pickingWorld.value = null
+    interaction.cancel('riderPoint')
     result.value = null
     overrides.value = {}
     excluded.value = new Set()
@@ -125,7 +125,7 @@ export const useRider = defineStore('rider', () => {
 
   function close() {
     open.value = false
-    pickingWorld.value = null
+    interaction.cancel('riderPoint')
     if (planImage.value) URL.revokeObjectURL(planImage.value.url)
     planImage.value = null
   }
@@ -198,14 +198,21 @@ export const useRider = defineStore('rider', () => {
     planPoints.value = next
   }
 
+  /** The "Pick in venue" button for world point 0 or 1: the next click in the venue sets it (a second press cancels). */
+  function pickWorld(index: number) {
+    const picking = interaction.mode
+    if (picking?.kind === 'riderPoint' && picking.index === index) interaction.cancel()
+    else interaction.start({ kind: 'riderPoint', index })
+  }
+
   /** Called by the viewer with the surface point that was clicked while a world point was asked for. */
   function deliverWorld(point: [number, number, number]) {
-    const index = pickingWorld.value
-    if (index === null) return
+    const picking = interaction.mode
+    if (picking?.kind !== 'riderPoint') return
+    interaction.cancel()
     const next = [...worldPoints.value]
-    next[index] = [point[0], point[2]]
+    next[picking.index] = [point[0], point[2]]
     worldPoints.value = next
-    pickingWorld.value = null
   }
 
   // --- drafts ---
@@ -413,7 +420,6 @@ export const useRider = defineStore('rider', () => {
     planImage,
     planPoints,
     worldPoints,
-    pickingWorld,
     ceilingAt,
     similarity,
     calibrating,
@@ -448,6 +454,7 @@ export const useRider = defineStore('rider', () => {
     readPlan,
     removeRider,
     setPlanPoint,
+    pickWorld,
     deliverWorld,
     refreshDrafts,
     setOverride,

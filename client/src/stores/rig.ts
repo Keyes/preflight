@@ -5,6 +5,7 @@ import type { Fixture, FixtureGroup } from '@preflight/shared'
 import { GENERIC_ID, GENERIC_MOVING_HEAD, profileFor } from '../fixtures/profiles'
 import type { AimPatch } from '../scene/aim'
 import { FixtureHistory } from './fixtureHistory'
+import { useInteraction } from './interaction'
 import { useLayout } from './layout'
 import { useVenues } from './venues'
 
@@ -22,19 +23,17 @@ export interface RotationReadout {
   y: number
 }
 
-/** The lights placed in the current venue, plus selection and placement mode. */
+/** The lights placed in the current venue, with their selection, undo, aiming and placing. */
 export const useRig = defineStore('rig', () => {
   const venues = useVenues()
   const layout = useLayout()
+  const interaction = useInteraction()
   /** The selected fixtures, in the order they were selected. */
   const selectedIds = ref<string[]>([])
   /** The selected fixture when exactly one is selected (what single-light editing works on). */
   const selectedId = computed(() => (selectedIds.value.length === 1 ? selectedIds.value[0] : null))
-  const placing = ref(false)
   /** The fixture picker window is open. */
   const pickerOpen = ref(false)
-  /** What the next click in the venue places (chosen in the picker). */
-  const pending = ref<{ profileId: string; mode?: string } | null>(null)
   /** What the gizmo on the selected fixture does: drag it around or turn it. */
   const gizmoMode = ref<'move' | 'rotate'>('move')
   /** Shown next to the pointer while a rotation ring is being dragged. */
@@ -76,10 +75,7 @@ export const useRig = defineStore('rig', () => {
     () => {
       if (pendingVenueId) void flush()
       selectedIds.value = []
-      placing.value = false
       pickerOpen.value = false
-      pending.value = null
-      aim.armed = false
       aim.anchor = null
       aim.ids = []
     },
@@ -427,13 +423,11 @@ export const useRig = defineStore('rig', () => {
 
   // --- aiming ----------------------------------------------------------------------------------
   //
-  // "Aim at point" waits for a click on a surface, then points the selected lights at it (the viewer solves pan and tilt,
-  // or a new orientation, and hands the result to `applyAim`). The point is kept, so the spread and fan sliders can
-  // re-aim the same lights while it is still their selection.
+  // "Aim at point" waits for a click on a surface (the 'aim' click mode), then points the selected lights at it (the viewer
+  // solves pan and tilt, or a new orientation, and hands the result to `applyAim`). The point is kept, so the spread and fan
+  // sliders can re-aim the same lights while it is still their selection.
 
   const aim = reactive({
-    /** the next click on a surface sets the aim point */
-    armed: false,
     anchor: null as [number, number, number] | null,
     /** the lights that were aimed, in order */
     ids: [] as string[],
@@ -455,24 +449,18 @@ export const useRig = defineStore('rig', () => {
 
   function startAim() {
     if (selectedIds.value.length === 0) return
-    placing.value = false
-    pending.value = null
     pickerOpen.value = false
-    aim.armed = true
-  }
-
-  function cancelAim() {
-    aim.armed = false
+    interaction.start({ kind: 'aim' })
   }
 
   function toggleAim() {
-    if (aim.armed) cancelAim()
+    if (interaction.is('aim')) interaction.cancel()
     else startAim()
   }
 
   /** The point was clicked: aim the selection at it. */
   function aimAt(point: [number, number, number]) {
-    aim.armed = false
+    interaction.cancel('aim')
     aim.anchor = point
     aim.ids = [...selectedIds.value]
     aim.tick++
@@ -527,19 +515,22 @@ export const useRig = defineStore('rig', () => {
 
   /** The "Place light" button: opens the picker, or cancels a placement that is waiting for a click. */
   function togglePlacing() {
-    if (placing.value) {
-      placing.value = false
-      pending.value = null
-    } else {
-      pickerOpen.value = true
-    }
+    if (interaction.is('place')) interaction.cancel()
+    else pickerOpen.value = true
   }
 
   /** The picker's choice: the next click on a surface in the venue places this fixture. */
   function startPlacing(profileId: string, mode?: string) {
-    pending.value = { profileId, ...(mode ? { mode } : {}) }
     pickerOpen.value = false
-    placing.value = true
+    interaction.start({ kind: 'place', choice: { profileId, ...(mode ? { mode } : {}) } })
+  }
+
+  /** The surface was clicked while placing: adds the chosen fixture there, mounted as the surface says. */
+  function placeAt(pose: Pick<Fixture, 'position' | 'mount' | 'rotation'>) {
+    const placing = interaction.mode
+    if (placing?.kind !== 'place') return
+    interaction.cancel()
+    add({ ...pose, ...placing.choice })
   }
 
   return {
@@ -548,7 +539,6 @@ export const useRig = defineStore('rig', () => {
     aim,
     aimActive,
     startAim,
-    cancelAim,
     toggleAim,
     aimAt,
     setAimSpread,
@@ -586,10 +576,9 @@ export const useRig = defineStore('rig', () => {
     updateMany,
     setValueMany,
     setValuesMany,
-    placing,
     pickerOpen,
-    pending,
     startPlacing,
+    placeAt,
     gizmoMode,
     rotationReadout,
     error,

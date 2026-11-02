@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import type { FixtureGroup } from '@preflight/shared'
+import { MOD } from '../input/keymap'
 import { useRig } from '../stores/rig'
 import { useTransfer } from '../stores/transfer'
 import { useVenues } from '../stores/venues'
@@ -15,9 +16,8 @@ const rig = useRig()
 const transfer = useTransfer()
 
 /** The key that adds to a selection by clicking (on a Mac Ctrl-click is a right click). */
-const addKey = /Mac|iPhone|iPad/.test(navigator.platform) ? '⌘' : 'Ctrl'
 const open = ref<Record<string, boolean>>({})
-const groupsTip = `Select lights, then “+ From selection” keeps them together as a named group, in the order you selected them. Click a group to select its lights (${addKey}-click adds it to the selection). The arrow shows the lights in it, where you can reorder them. Right-click a group to rename it, add or replace its lights, copy it to another venue or delete it.`
+const groupsTip = `Select lights, then “+ From selection” keeps them together as a named group, in the order you selected them. Click a group to select its lights (${MOD}-click adds it to the selection). The arrow shows the lights in it, where you can reorder them. Right-click a group to rename it, add or replace its lights, copy it to another venue or delete it.`
 const renamingId = ref<string | null>(null)
 const menu = ref<{ x: number; y: number; id: string } | null>(null)
 

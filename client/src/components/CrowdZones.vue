@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useCrowd } from '../stores/crowd'
+import { useInteraction } from '../stores/interaction'
 import { useTransfer } from '../stores/transfer'
 import { useVenues } from '../stores/venues'
 import ContextMenu from './ContextMenu.vue'
@@ -11,6 +12,9 @@ import SidebarSection from './SidebarSection.vue'
 const store = useVenues()
 const crowd = useCrowd()
 const transfer = useTransfer()
+const interaction = useInteraction()
+/** The next click in the venue is for the crowd (a corner or a facing point). */
+const picking = computed(() => interaction.is('zone') || interaction.is('facing'))
 
 const menu = ref<{ x: number; y: number; id: string } | null>(null)
 const renamingId = ref<string | null>(null)
@@ -70,11 +74,11 @@ const eye = 'M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6
   >
     <template #actions>
       <span v-if="total" class="total" :title="totalTitle">{{ total }}</span>
-      <button class="link" :disabled="crowd.picking" @click="crowd.startDrawing()">+ Zone</button>
+      <button class="link" :disabled="picking" @click="crowd.startDrawing()">+ Zone</button>
     </template>
 
-    <p v-if="crowd.message && !crowd.picking" class="hint error">{{ crowd.message }}</p>
-    <p v-if="!crowd.zones.length && !crowd.picking" class="hint">No zones yet. “+ Zone”, then click two corners on the floor.</p>
+    <p v-if="crowd.message && !picking" class="hint error">{{ crowd.message }}</p>
+    <p v-if="!crowd.zones.length && !picking" class="hint">No zones yet. “+ Zone”, then click two corners on the floor.</p>
 
     <ul v-if="crowd.zones.length">
       <li v-for="zone in crowd.zones" :key="zone.id" @contextmenu="openMenu($event, zone.id)">
