@@ -16,15 +16,15 @@ Follow [Getting started](README.md#getting-started) in the README. You can work 
 
 ## Before you open a pull request
 
-Run the checks that CI runs:
+Run the checks that CI runs (formatting, lint, unused code, types, tests and the client build):
 
 ```
-npm run typecheck -w server
-npm test -w server
-npm run build -w client
+npm run check
 ```
 
-Then try the change in the running app (`npm run dev`), especially anything that renders.
+`npm run format` fixes the formatting, and `npx eslint . --fix` fixes the lint findings that have an automatic fix. Then try the change in the running app (`npm run dev`), especially anything that renders.
+
+What the checks enforce, and what a review looks at beyond them, is in [docs/engineering.md](docs/engineering.md).
 
 - Keep a pull request to one change, and say in its description what it does and how you checked it. A screenshot helps for anything visible.
 - Write code that reads like the code around it: the same naming, structure and amount of comments. Comments explain why something is done, not what the next line does.

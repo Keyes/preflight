@@ -90,6 +90,8 @@ There is no login, so both only accept connections from the same machine by defa
 npm test -w server
 ```
 
+`npm run check` runs everything CI runs: formatting, lint, unused code, type checks, tests and the client build.
+
 ## Venue models
 
 - **glTF (`.glb`), works everywhere.** Export from Blender with File > Export > glTF 2.0, format "glTF Binary (.glb)", and the default "+Y Up": glTF is in meters with Y up, which is what the viewer expects, so model the room at real size in meters. A `.gltf` works too when its data and textures are embedded in it; one that refers to separate `.bin` or image files is refused, so export a `.glb` instead. Lights, cameras and animations in the file are ignored. The file is checked and stored as it is, with no conversion.
@@ -149,6 +151,7 @@ Trimble doesn't publish the SketchUp SDK for Linux, so the converter can't be bu
 - `samples/`: the demo club (`demo-club.glb` and `demo-club.json`), made by `npm run demo-venue -w server` from `server/src/tools/demoVenue.ts`. The model is original and covered by the project's license.
 - `docs/roadmap.md`: what is planned.
 - `docs/architecture.md`: how the parts fit together, which way dependencies point, and the known problems in the structure.
+- `docs/engineering.md`: the guidelines a change is reviewed against, and the checks that enforce them.
 
 Data lives in `server/data/venues/<id>/` (git-ignored): `venue.json` (name, order, saved views, fixtures) and `model.glb`, the model the viewer loads: a glTF upload as it was uploaded, or a SketchUp upload converted (then the uploaded `model.skp` is kept next to it). Uploading an identical SketchUp file again skips the conversion, unless the converter has been rebuilt since (then it converts again, so a better converter reaches existing venues when you re-upload their file). Fixture parameters are stored as normalized values from 0 to 1, like DMX channels, which keeps the door open for live DMX input.
 
