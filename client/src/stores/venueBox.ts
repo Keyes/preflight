@@ -1,6 +1,6 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import type { Box } from '../venueCheck'
+import type { Box } from '../domain/venueCheck'
 
 /** The bounding box of the model that is on screen (set by the viewer, null while there is none). */
 export const useVenueBox = defineStore('venueBox', () => {

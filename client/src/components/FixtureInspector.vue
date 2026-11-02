@@ -3,18 +3,20 @@ import { computed } from 'vue'
 import InfoTip from './InfoTip.vue'
 import ValueField from './ValueField.vue'
 import type { Fixture } from '@preflight/shared'
-import { FOCUS_FAR, FOCUS_NEAR, beamAngleDegrees, focusDistance, goboSpinTurns, profileFor, strobeHz, travelDegrees } from '../fixtures/profiles'
-import { GOBOS, goboIndex, goboThumbnails, goboValue } from '../scene/goboLibrary'
-import { MAX_GOBO_LIGHTS, MAX_SHADOW_LIGHTS } from '../scene/FixtureRig'
+import { FOCUS_FAR, FOCUS_NEAR, beamAngleDegrees, focusDistance, goboSpinTurns, strobeHz, travelDegrees } from '../domain/profiles'
+import { GOBOS, goboIndex, goboThumbnails, goboValue } from '../domain/gobos'
+import { MAX_GOBO_LIGHTS, MAX_SHADOW_LIGHTS } from '../domain/limits'
 import { useRig } from '../stores/rig'
 import { useSettings } from '../stores/settings'
 import { useStats } from '../stores/stats'
+import { useCatalog } from '../stores/catalog'
 
 const rig = useRig()
+const catalog = useCatalog()
 const settings = useSettings()
 const stats = useStats()
 const fixture = computed(() => rig.selected)
-const profile = computed(() => (fixture.value ? profileFor(fixture.value.profileId) : undefined))
+const profile = computed(() => (fixture.value ? catalog.profileFor(fixture.value.profileId) : undefined))
 
 const SWATCHES: { name: string; rgb: [number, number, number] }[] = [
   { name: 'White', rgb: [1, 1, 1] },
@@ -124,11 +126,11 @@ function keepKeys(event: KeyboardEvent) {
 const group = computed(() => (rig.selectedIds.length > 1 ? rig.selection : []))
 type GroupControl = 'dimmer' | 'zoom' | 'focus' | 'pan' | 'tilt' | 'color' | 'strobe' | 'gobo' | 'goboAngle' | 'goboSpin'
 
-const valueOf = (f: Fixture, key: string) => f.values[key] ?? profileFor(f.profileId).defaults[key] ?? 0
+const valueOf = (f: Fixture, key: string) => f.values[key] ?? catalog.profileFor(f.profileId).defaults[key] ?? 0
 
 /** The selected lights that have this control (every light has a dimmer). */
 const having = (key: GroupControl) =>
-  group.value.filter((f) => key === 'dimmer' || profileFor(f.profileId).controls[key.startsWith('gobo') ? 'gobo' : (key as 'zoom')])
+  group.value.filter((f) => key === 'dimmer' || catalog.profileFor(f.profileId).controls[key.startsWith('gobo') ? 'gobo' : (key as 'zoom')])
 
 /** The shared value of a control, or its average and `mixed` when the lights differ. */
 function summary(key: string, list: Fixture[]) {
@@ -197,7 +199,7 @@ function setGroupHex(event: Event) {
 }
 
 /** Lights that can cast shadows (not bars and panels), and whether all, none or some of them do. */
-const shadowLights = computed(() => group.value.filter((f) => profileFor(f.profileId).emitsLight))
+const shadowLights = computed(() => group.value.filter((f) => catalog.profileFor(f.profileId).emitsLight))
 const groupShadow = computed(() => {
   const on = shadowLights.value.filter((f) => f.castShadows !== false).length
   return on === 0 ? 'none' : on === shadowLights.value.length ? 'all' : 'mixed'

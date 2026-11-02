@@ -1,13 +1,27 @@
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { FixtureDraft } from '@preflight/shared'
 import { useCatalog } from '../stores/catalog'
 import { useInteraction } from '../stores/interaction'
+import { useLayout } from '../stores/layout'
 import { useRider, type Flag, type RiderStep } from '../stores/rider'
 import { useVenues } from '../stores/venues'
 
 const rider = useRider()
 const interaction = useInteraction()
+const layout = useLayout()
+
+// The plan view fits the venue into the part of the view this panel leaves free: it reads the panel's width from here.
+const panel = ref<HTMLElement>()
+let sizeWatch: ResizeObserver | undefined
+onMounted(() => {
+  sizeWatch = new ResizeObserver(() => (layout.wizardWidth = panel.value?.getBoundingClientRect().width ?? 0))
+  if (panel.value) sizeWatch.observe(panel.value)
+})
+onBeforeUnmount(() => {
+  sizeWatch?.disconnect()
+  layout.wizardWidth = 0
+})
 const catalog = useCatalog()
 const venues = useVenues()
 
@@ -185,7 +199,7 @@ const venueName = computed(() => venues.current?.name ?? '')
 </script>
 
 <template>
-  <aside class="panel" role="dialog" aria-label="Import tech rider" @pointerdown.stop @keydown.stop>
+  <aside ref="panel" class="panel" role="dialog" aria-label="Import tech rider" @pointerdown.stop @keydown.stop>
     <header>
       <h2>
         Import tech rider <span class="venue">· {{ venueName }}</span>

@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { profileFor } from '../fixtures/profiles'
 import { keysFor } from '../input/keymap'
 import { useInteraction } from '../stores/interaction'
 import { useRig } from '../stores/rig'
 import ToastMessage from './ToastMessage.vue'
+import { useCatalog } from '../stores/catalog'
 
 const rig = useRig()
+const catalog = useCatalog()
 const interaction = useInteraction()
 
 const none = computed(() => rig.selectedIds.length === 0)
@@ -19,7 +20,7 @@ const hint = computed(() => {
     case 'aim':
       return 'Click a surface to aim the selected lights at it.'
     case 'place':
-      return `Click a ceiling, truss or floor to place the ${profileFor(mode.choice.profileId).name}.`
+      return `Click a ceiling, truss or floor to place the ${catalog.profileFor(mode.choice.profileId).name}.`
     case 'zone':
       return mode.first ? 'Click the opposite corner of the zone.' : 'Click the first corner of the zone on the floor.'
     case 'facing':

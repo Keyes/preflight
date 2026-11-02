@@ -1,7 +1,23 @@
 import { Matrix, Quaternion, Vector3 } from '@babylonjs/core'
 import type { Fixture } from '@preflight/shared'
-import { profileFor, travelDegrees } from '../fixtures/profiles'
-import type { FixtureRig } from './FixtureRig'
+import { travelDegrees, type FixtureProfile } from '../domain/profiles'
+
+/**
+ * Aiming lights at a spot: plain maths on where each light is (FixtureRig.aimable gives that), so it is tested without a
+ * scene.
+ */
+
+/** A light to aim: what it can do and where it is in the room. */
+export interface AimedLight {
+  fixture: Fixture
+  profile: FixtureProfile
+  /** where its beam turns, in world space (a moving head's tilt axis) */
+  pivot: Vector3
+  /** the orientation of its base */
+  rotation: Quaternion
+  /** which way its beam points now, in world space */
+  beam: Vector3
+}
 
 /** How a row of lights is pointed at a spot. Both default to 0, which puts every beam on the spot. */
 export interface AimOptions {
@@ -35,8 +51,7 @@ const nearestTurn = (target: number, reference: number) => target + 360 * Math.r
  * in the base's frame the beam is (sin T sin P, cos T, sin T cos P). A tilt to either side reaches the same direction
  * with the pan half a turn apart, and pan can wrap by whole turns: the way that moves the head least and stays in range wins.
  */
-function solveMover(fixture: Fixture, rootRotation: Quaternion, direction: Vector3): { pan: number; tilt: number; reachable: boolean } {
-  const profile = profileFor(fixture.profileId)
+function solveMover({ fixture, profile, rotation: rootRotation }: AimedLight, direction: Vector3): { pan: number; tilt: number; reachable: boolean } {
   const d = direction.applyRotationQuaternion(Quaternion.Inverse(rootRotation))
   const tiltAbs = Math.acos(Math.min(1, Math.max(-1, d.y))) * DEG
   const horizontal = Math.hypot(d.x, d.z)
@@ -85,14 +100,13 @@ function solveFixed(rootRotation: Quaternion, current: Vector3, direction: Vecto
  * stand on: the spots are `spread` meters apart along the horizontal direction from the first light to the last, centered
  * on the point. `fan` then opens the beams out by that many degrees in total, evenly across the row.
  */
-export function solveAim(rig: FixtureRig, fixtures: readonly Fixture[], point: Vector3, options: AimOptions): AimResult {
+export function solveAim(lights: readonly AimedLight[], point: Vector3, options: AimOptions): AimResult {
   const patches = new Map<string, AimPatch>()
   const unreachable: string[] = []
-  const lights = fixtures.filter((f) => rig.pivotOf(f.id))
   const n = lights.length
   if (n === 0) return { patches, unreachable }
 
-  const pivots = lights.map((f) => rig.pivotOf(f.id)!)
+  const pivots = lights.map((l) => l.pivot)
   // the line the lights stand on, horizontally: from the first to the last
   let line = new Vector3(pivots[n - 1].x - pivots[0].x, 0, pivots[n - 1].z - pivots[0].z)
   if (line.length() < 0.05) {
@@ -103,7 +117,8 @@ export function solveAim(rig: FixtureRig, fixtures: readonly Fixture[], point: V
   }
   line.normalize()
 
-  lights.forEach((fixture, i) => {
+  lights.forEach((light, i) => {
+    const { fixture, profile } = light
     const centered = i - (n - 1) / 2
     const target = point.add(line.scale(options.spread * centered))
     const aim = target.subtract(pivots[i])
@@ -116,17 +131,12 @@ export function solveAim(rig: FixtureRig, fixtures: readonly Fixture[], point: V
       const angle = options.fan * RAD * (i / (n - 1) - 0.5)
       direction = Vector3.TransformNormal(direction, Matrix.RotationY(angle)).normalize()
     }
-    const profile = profileFor(fixture.profileId)
-    const root = rig.rootOf(fixture.id)?.rotationQuaternion
-    if (!root) return
     if (profile.controls.pan && profile.controls.tilt && profile.panRange > 0 && profile.tiltRange > 0) {
-      const solved = solveMover(fixture, root, direction)
+      const solved = solveMover(light, direction)
       patches.set(fixture.id, { values: { pan: solved.pan, tilt: solved.tilt } })
       if (!solved.reachable) unreachable.push(fixture.id)
     } else {
-      const current = rig.beamDirectionOf(fixture.id)
-      if (!current) return
-      patches.set(fixture.id, { rotation: solveFixed(root, current, direction).asArray() })
+      patches.set(fixture.id, { rotation: solveFixed(light.rotation, light.beam, direction).asArray() })
     }
   })
   return { patches, unreachable }

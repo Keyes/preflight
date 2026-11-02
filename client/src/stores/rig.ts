@@ -2,11 +2,12 @@ import { computed, reactive, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
 import type { Fixture, FixtureGroup } from '@preflight/shared'
-import { GENERIC_ID, GENERIC_MOVING_HEAD, profileFor } from '../fixtures/profiles'
+import { GENERIC_ID, GENERIC_MOVING_HEAD } from '../domain/profiles'
 import type { AimPatch } from '../scene/aim'
 import type { RotationReadout } from '../scene/SelectionGizmo'
 import { partKey, useAutosave } from './autosave'
-import { FixtureHistory } from './fixtureHistory'
+import { useCatalog } from './catalog'
+import { FixtureHistory } from '../domain/fixtureHistory'
 import { useInteraction } from './interaction'
 import { useLayout } from './layout'
 import { useVenues } from './venues'
@@ -17,6 +18,7 @@ export const useRig = defineStore('rig', () => {
   const layout = useLayout()
   const interaction = useInteraction()
   const autosave = useAutosave()
+  const catalog = useCatalog()
   /** The selected fixtures, in the order they were selected. */
   const selectedIds = ref<string[]>([])
   /** The selected fixture when exactly one is selected (what single-light editing works on). */
@@ -140,12 +142,12 @@ export const useRig = defineStore('rig', () => {
   }
 
   function baseName(profileId: string) {
-    return profileId === GENERIC_ID ? 'Moving head' : profileFor(profileId).name
+    return profileId === GENERIC_ID ? 'Moving head' : catalog.profileFor(profileId).name
   }
 
   function add(partial: Pick<Fixture, 'position' | 'mount'> & Partial<Fixture>, selectIt = true): Fixture {
     touch('Place light', null, 'all')
-    const profile = partial.profileId ? profileFor(partial.profileId) : GENERIC_MOVING_HEAD
+    const profile = partial.profileId ? catalog.profileFor(partial.profileId) : GENERIC_MOVING_HEAD
     const fixture: Fixture = {
       id: crypto.randomUUID(),
       name: nextName(baseName(profile.id)),

@@ -1,8 +1,8 @@
-import { computed, ref } from 'vue'
+import { computed, ref, shallowRef } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
 import type { CatalogFile, CatalogFixture } from '@preflight/shared'
-import { GENERIC_CATALOG_ENTRY, registerCatalog } from '../fixtures/profiles'
+import { GENERIC_CATALOG_ENTRY, GENERIC_MOVING_HEAD, profileFromCatalog, type FixtureProfile } from '../domain/profiles'
 
 /** The fixture catalog (from the Open Fixture Library), loaded once from the server. */
 export const useCatalog = defineStore('catalog', () => {
@@ -12,6 +12,17 @@ export const useCatalog = defineStore('catalog', () => {
   const importedAt = ref('')
   const status = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
   const error = ref<string | null>(null)
+
+  /** What each catalog fixture can do, by its id (see domain/profiles.ts). */
+  const profiles = shallowRef(new Map<string, FixtureProfile>())
+
+  /**
+   * The profile of a fixture. One that is not in the catalog (yet) is the generic moving head; whatever reads this updates
+   * when the catalog arrives.
+   */
+  function profileFor(id: string): FixtureProfile {
+    return profiles.value.get(id) ?? GENERIC_MOVING_HEAD
+  }
 
   /** Every fixture the picker can offer: the generic one first, then the catalog. */
   const all = computed(() => [GENERIC_CATALOG_ENTRY, ...items.value])
@@ -24,7 +35,7 @@ export const useCatalog = defineStore('catalog', () => {
       items.value = file.fixtures
       source.value = file.source
       importedAt.value = file.importedAt
-      registerCatalog(file.fixtures)
+      profiles.value = new Map(file.fixtures.map((item) => [item.id, profileFromCatalog(item)]))
       status.value = 'ready'
       error.value = null
     } catch (e) {
@@ -33,5 +44,5 @@ export const useCatalog = defineStore('catalog', () => {
     }
   }
 
-  return { items, all, source, importedAt, status, error, load }
+  return { items, all, source, importedAt, status, error, profiles, profileFor, load }
 })

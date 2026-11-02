@@ -24,11 +24,15 @@ import {
   type ShaderMaterial,
 } from '@babylonjs/core'
 import type { Fixture } from '@preflight/shared'
-import { beamAngleDegrees, candela, focusDistance, goboSpinTurns, profileFor, strobeHz, travelDegrees } from '../fixtures/profiles'
-import type { Absorber } from '../crowdModel'
+import { beamAngleDegrees, candela, focusDistance, goboSpinTurns, strobeHz, travelDegrees, type FixtureProfile } from '../domain/profiles'
+import type { Absorber } from '../domain/crowdModel'
 import { createBeamMaterial } from './beamMaterial'
-import { goboBlurLevel, GoboProjection, goboIndex } from './goboLibrary'
-import { buildModel, modelKey, type ModelLayout, type ModelSpec } from './fixtureModel'
+import { goboIndex } from '../domain/gobos'
+import { MAX_GOBO_LIGHTS, MAX_SHADOW_LIGHTS } from '../domain/limits'
+import { goboBlurLevel, GoboProjection } from './goboLibrary'
+import { modelKey, type ModelSpec } from '../domain/fixtureBody'
+import type { AimedLight } from './aim'
+import { buildModel, type ModelLayout } from './fixtureModel'
 
 const BEAM_LENGTH = 25
 const CONE_SEGMENTS = 48
@@ -58,15 +62,6 @@ const FOCUS_BLUR = 2.5
 const MIN_EDGE = 0.02
 const MAX_EDGE = 0.5 // keep in sync with EDGE_MAX in beamMaterial.ts
 
-/** How many lights can cast shadows at once (each is a regular light with its own shadow map, outside the clustered system). */
-export const MAX_SHADOW_LIGHTS = 10
-/**
- * How many lights can project a gobo pattern onto surfaces at once. The clustered system cannot carry textures, so each
- * of these is a regular light too (and a light that also casts shadows only counts once).
- */
-export const MAX_GOBO_LIGHTS = 4
-/** Most lights that can be outside the clustered system at once. */
-export const MAX_REGULAR_LIGHTS = MAX_SHADOW_LIGHTS + MAX_GOBO_LIGHTS
 /** Resolution of each light's shadow map. */
 const SHADOW_MAP_SIZE = 1024
 /** After the last change, every light's shadows are refreshed once more this long after, so shadows cast by a moved fixture's body on the other lights catch up. */
@@ -206,8 +201,10 @@ export class FixtureRig {
   onShadowedChange: ((ids: string[]) => void) | null = null
   private shadowedIds: string[] = []
 
+  /** `profileFor` says what a fixture can do (the catalog store's, so the rig follows the catalog when it arrives). */
   constructor(
     private scene: Scene,
+    private readonly profileFor: (profileId: string) => FixtureProfile,
     useClustering = true,
   ) {
     const container = useClustering ? new ClusteredLightContainer('fixture-lights', [], scene) : null
@@ -408,6 +405,16 @@ export class FixtureRig {
     return Vector3.TransformNormal(Vector3.Up(), node.tilt.computeWorldMatrix(true)).normalize()
   }
 
+  /** The given lights as aiming needs them (see aim.ts): the ones the rig has, with where they are and how they point. */
+  aimable(fixtures: readonly Fixture[]): AimedLight[] {
+    return fixtures.flatMap((fixture) => {
+      const pivot = this.pivotOf(fixture.id)
+      const rotation = this.rootOf(fixture.id)?.rotationQuaternion
+      const beam = this.beamDirectionOf(fixture.id)
+      return pivot && rotation && beam ? [{ fixture, profile: this.profileFor(fixture.profileId), pivot, rotation, beam }] : []
+    })
+  }
+
   fixtureIdOf(mesh: AbstractMesh | null | undefined): string | undefined {
     return (mesh?.metadata as { fixtureId?: string } | null | undefined)?.fixtureId
   }
@@ -442,7 +449,7 @@ export class FixtureRig {
 
     const lensMaterial = new StandardMaterial(`fx-lens-mat-${id}`, scene)
     lensMaterial.disableLighting = true
-    const model = profileFor(fixture.profileId).model
+    const model = this.profileFor(fixture.profileId).model
     const built = buildModel({ scene, id, root, pan, tilt, bodyMaterial: this.bodyMaterial, lensMaterial, metadata: meta }, model)
     const { layout, lens } = built
     pan.position.y = layout.baseHeight
@@ -624,7 +631,7 @@ export class FixtureRig {
   }
 
   private apply(node: FixtureNode, fixture: Fixture, haze: number) {
-    const profile = profileFor(fixture.profileId)
+    const profile = this.profileFor(fixture.profileId)
     const v = fixture.values
     const get = (key: string, fallback: number) => v[key] ?? profile.defaults[key] ?? fallback
 
@@ -802,7 +809,7 @@ export class FixtureRig {
     if (this.shadowsEnabled) {
       for (const fixture of fixtures) {
         if (wanted.size >= MAX_SHADOW_LIGHTS) break
-        const profile = profileFor(fixture.profileId)
+        const profile = this.profileFor(fixture.profileId)
         const dimmer = fixture.values.dimmer ?? profile.defaults.dimmer ?? 1
         if (profile.emitsLight && fixture.castShadows !== false && dimmer > 0.001) wanted.add(fixture.id)
       }

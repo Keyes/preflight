@@ -4,13 +4,13 @@
 // them in watchers, turns their callbacks and the clicks in the view into store actions, and disposes them.
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { Color4, Engine, PointerEventTypes, Scene, Texture, Vector3, type DepthRenderer, type PointerInfo } from '@babylonjs/core'
-import { crowdAbsorbers } from '../crowdModel'
-import { profilesVersion } from '../fixtures/profiles'
+import { crowdAbsorbers } from '../domain/crowdModel'
+import { MAX_REGULAR_LIGHTS } from '../domain/limits'
 import { CAMERA_KEYS } from '../input/keymap'
 import { solveAim } from '../scene/aim'
 import { AimCursor } from '../scene/AimCursor'
 import { Crowd as CrowdScene } from '../scene/Crowd'
-import { FixtureRig, MAX_REGULAR_LIGHTS } from '../scene/FixtureRig'
+import { FixtureRig } from '../scene/FixtureRig'
 import { Look } from '../scene/Look'
 import { QualityGovernor } from '../scene/quality'
 import { RiderMarkers } from '../scene/RiderMarkers'
@@ -21,8 +21,10 @@ import { mountOnSurface, VenueModel } from '../scene/VenueModel'
 import { insidePose, overviewPose, ViewerCamera, type Bounds } from '../scene/ViewerCamera'
 import { ZoneOutlines } from '../scene/ZoneOutlines'
 import { useCameraBridge } from '../stores/camera'
+import { useCatalog } from '../stores/catalog'
 import { useCrowd } from '../stores/crowd'
 import { useInteraction } from '../stores/interaction'
+import { useLayout } from '../stores/layout'
 import { useRider } from '../stores/rider'
 import { useRig } from '../stores/rig'
 import { useSettings } from '../stores/settings'
@@ -40,6 +42,7 @@ const CLUSTERED_MAX_LIGHTS = 4 + MAX_REGULAR_LIGHTS
 
 const bridge = useCameraBridge()
 const settings = useSettings()
+const catalog = useCatalog()
 const stats = useStats()
 const rig = useRig()
 const venueBox = useVenueBox()
@@ -47,6 +50,7 @@ const crowdStore = useCrowd()
 const riderStore = useRider()
 const venues = useVenues()
 const interaction = useInteraction()
+const layout = useLayout()
 const canvas = ref<HTMLCanvasElement>()
 
 // Babylon objects stay out of Vue's reactivity: plain variables, made when the canvas is there.
@@ -151,7 +155,7 @@ onMounted(() => {
 /** The rig's lights and the crowd, which share the surfaces' light limit and the depth pass the beams fade against. */
 function makeLights(scene: Scene, engine: Engine, camera: ViewerCamera['camera']): DepthRenderer {
   // ?clustered=0 switches clustered lighting off, for comparing against the plain path.
-  const lights = new FixtureRig(scene, new URLSearchParams(location.search).get('clustered') !== '0')
+  const lights = new FixtureRig(scene, (id) => catalog.profileFor(id), new URLSearchParams(location.search).get('clustered') !== '0')
   lights.setShadows(settings.shadows)
   lights.onShadowedChange = (ids) => (stats.shadowed = ids)
   lights.onProjectedChange = (ids) => (stats.projected = ids)
@@ -385,9 +389,8 @@ function updateZoneOutline() {
 /** The view's size in render pixels, and how much of it the wizard panel covers, for the plan view to fit the venue beside it. */
 function viewport() {
   const width = engine?.getRenderWidth() ?? 1
-  const panel = document.querySelector('aside[aria-label="Import tech rider"]')?.getBoundingClientRect().width ?? 0
   const cssScale = width / Math.max(1, canvas.value?.clientWidth ?? width)
-  return { width, height: engine?.getRenderHeight() ?? 1, coveredPx: panel * cssScale }
+  return { width, height: engine?.getRenderHeight() ?? 1, coveredPx: layout.wizardWidth * cssScale }
 }
 
 // While the wizard places the plan, the view looks down on the venue, with the lights and the crowd out of the way and
@@ -480,14 +483,17 @@ watch(
   { deep: true, flush: 'post' },
 )
 // Fixtures placed from the catalog look different once the catalog has arrived.
-watch(profilesVersion, () => fixtureRig?.sync(rig.fixtures, settings.haze))
+watch(
+  () => catalog.profiles,
+  () => fixtureRig?.sync(rig.fixtures, settings.haze),
+)
 watch(
   () => rig.aim.tick,
   () => {
     // the lights that were aimed, pointed at the aim point (again) with the current spread and fan
     if (!fixtureRig || !rig.aim.anchor) return
-    const lights = rig.aim.ids.map((id) => rig.fixtures.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f)
-    const result = solveAim(fixtureRig, lights, new Vector3(...rig.aim.anchor), { spread: rig.aim.spread, fan: rig.aim.fan })
+    const fixtures = rig.aim.ids.map((id) => rig.fixtures.find((f) => f.id === id)).filter((f): f is NonNullable<typeof f> => !!f)
+    const result = solveAim(fixtureRig.aimable(fixtures), new Vector3(...rig.aim.anchor), { spread: rig.aim.spread, fan: rig.aim.fan })
     rig.applyAim(result.patches, result.unreachable)
   },
 )

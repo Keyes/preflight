@@ -1,7 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import type { Crowd, CrowdZone } from '@preflight/shared'
-import { DEFAULT_CROWD, MIN_ZONE_SIDE, requestedPeople, totalPeople, zoneCounts } from '../crowdModel'
+import { DEFAULT_CROWD, MIN_ZONE_SIDE, requestedPeople, totalPeople, zoneCounts } from '../domain/crowdModel'
 import { useInteraction } from './interaction'
 import { useVenues } from './venues'
 

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { downloadBlob } from '../scene/screenshot'
 import { useCameraBridge } from '../stores/camera'
 import { useSettings } from '../stores/settings'
 import { useVenues } from '../stores/venues'
@@ -40,6 +39,19 @@ async function shoot() {
   } finally {
     busy.value = false
   }
+}
+
+/** Saves the picture as a file, the way a browser downloads a link. */
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  // Give the browser a moment to start the download before releasing the data.
+  setTimeout(() => URL.revokeObjectURL(url), 10_000)
 }
 </script>
 

@@ -2,7 +2,7 @@ import { computed, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
 import { similarityFromPairs, type DraftResult, type Fixture, type FixtureDraft, type FixtureGroup, type RiderFile } from '@preflight/shared'
-import { profileFor } from '../fixtures/profiles'
+import { useCatalog } from './catalog'
 import { useInteraction } from './interaction'
 import { useRig } from './rig'
 import { useVenues } from './venues'
@@ -32,6 +32,7 @@ export const useRider = defineStore('rider', () => {
   const venues = useVenues()
   const rig = useRig()
   const interaction = useInteraction()
+  const catalog = useCatalog()
 
   const open = ref(false)
   const step = ref<RiderStep>('load')
@@ -368,7 +369,7 @@ export const useRider = defineStore('rider', () => {
         rotation: placement.rotation,
         ...(d.mode ? { mode: d.mode } : {}),
         ...(d.patch ? { patch: d.patch } : {}),
-        values: { ...profileFor(d.profileId!).defaults },
+        values: { ...catalog.profileFor(d.profileId!).defaults },
       }
     })
     const groups: FixtureGroup[] = (result.value?.groups ?? [])

@@ -1,6 +1,6 @@
 import { DynamicTexture, Matrix, Mesh, MeshBuilder, PBRMaterial, Quaternion, StandardMaterial, Vector3, type AbstractMesh, type Scene } from '@babylonjs/core'
 import type { Crowd as CrowdData, CrowdZone } from '@preflight/shared'
-import { crowdThreshold, fullCount, personRank, visibleCount } from '../crowdModel'
+import { crowdThreshold, fullCount, personRank, visibleCount } from '../domain/crowdModel'
 
 /** Radius of the soft dark disc on the floor under each person, meters, and how dark its middle is. */
 const CONTACT_RADIUS = 0.34

@@ -37,6 +37,8 @@ export const useLayout = defineStore('layout', () => {
   const dockOpen = ref(stored.dockOpen ?? true)
   const tab = ref<SidebarTab>(stored.tab ?? 'lights')
   const popover = ref<Popover | null>(null)
+  /** How wide the rider wizard's panel over the view is, CSS pixels (0 while it is closed): the plan view fits the venue beside it. */
+  const wizardWidth = ref(0)
   const toast = shallowRef<Toast | null>(null)
   let toastTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -73,5 +75,5 @@ export const useLayout = defineStore('layout', () => {
     toast.value = null
   }
 
-  return { collapsed, dockOpen, tab, popover, toast, toggleSection, togglePopover, showToast, hideToast }
+  return { collapsed, dockOpen, tab, popover, wizardWidth, toast, toggleSection, togglePopover, showToast, hideToast }
 })

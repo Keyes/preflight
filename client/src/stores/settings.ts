@@ -1,6 +1,6 @@
 import { nextTick, ref, watch } from 'vue'
 import { defineStore } from 'pinia'
-import { AMBIENT_DEFAULT, HAZE_DEFAULT } from '../atmosphere'
+import { AMBIENT_DEFAULT, HAZE_DEFAULT } from '../domain/atmosphere'
 import { useVenues } from './venues'
 
 export { AMBIENT_DEFAULT, HAZE_DEFAULT }
@@ -142,7 +142,7 @@ export const useSettings = defineStore('settings', () => {
   const showFps = ref(stored.showFps ?? true)
   /** Beams fade out smoothly before the surfaces they meet instead of ending in a hard cut. */
   const softBeams = ref(stored.softBeams ?? true)
-  /** Lights cast shadows (a limited number of them, see MAX_SHADOW_LIGHTS in the fixture rig). */
+  /** Lights cast shadows (a limited number of them, see MAX_SHADOW_LIGHTS in domain/limits.ts). */
   const shadows = ref(stored.shadows ?? true)
   /** How strongly lights illuminate surfaces, in stops (EV), independent of how visible the beams are in haze. */
   const surfaceLight = ref(clamp(stored.surfaceLight, SURFACE_LIGHT_MIN, SURFACE_LIGHT_MAX, 0))

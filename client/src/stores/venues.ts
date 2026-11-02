@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import * as api from '../api'
 import type { Atmosphere, CameraView, Crowd, Venue } from '@preflight/shared'
-import { AMBIENT_DEFAULT, HAZE_DEFAULT } from '../atmosphere'
+import { AMBIENT_DEFAULT, HAZE_DEFAULT } from '../domain/atmosphere'
 import { partKey, useAutosave } from './autosave'
 
 const STORAGE_KEY = 'preflight.currentVenue'

@@ -15,7 +15,7 @@ import {
   TONE_MAPPINGS,
   useSettings,
 } from '../stores/settings'
-import { MAX_SHADOW_LIGHTS } from '../scene/FixtureRig'
+import { MAX_SHADOW_LIGHTS } from '../domain/limits'
 import { useLayout } from '../stores/layout'
 import SidebarSection from './SidebarSection.vue'
 

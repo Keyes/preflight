@@ -1,19 +1,6 @@
 import { expect, test } from 'vitest'
 import type { CatalogFixture } from '@preflight/shared'
-import {
-  beamAngleDegrees,
-  candela,
-  focusDistance,
-  GENERIC_ID,
-  GENERIC_MOVING_HEAD,
-  goboSpinTurns,
-  profileFor,
-  profileFromCatalog,
-  profilesVersion,
-  registerCatalog,
-  strobeHz,
-  travelDegrees,
-} from './profiles'
+import { beamAngleDegrees, candela, focusDistance, GENERIC_MOVING_HEAD, goboSpinTurns, profileFromCatalog, strobeHz, travelDegrees } from './profiles'
 
 const fixture = (over: Partial<CatalogFixture> = {}): CatalogFixture => ({
   id: 'acme/spot',
@@ -68,14 +55,6 @@ test('a bar has a strip-shaped lens: its beam is a sheet and it projects no gobo
   const profile = profileFromCatalog(fixture({ categories: ['Pixel Bar'], moving: false, features: ['gobo'] }))
   expect(profile.sheet).toBe(true)
   expect(profile.controls.gobo).toBe(false)
-})
-
-test('an unknown fixture falls back to the generic moving head until the catalog has it', () => {
-  expect(profileFor('acme/later').id).toBe(GENERIC_ID)
-  const before = profilesVersion.value
-  registerCatalog([fixture({ id: 'acme/later', name: 'Later' })])
-  expect(profileFor('acme/later').name).toBe('Later')
-  expect(profilesVersion.value).toBe(before + 1)
 })
 
 test('turns 0..1 values into physical quantities', () => {

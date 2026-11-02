@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, ref, watch } from 'vue'
 import type { Fixture } from '@preflight/shared'
-import { profileFor } from '../fixtures/profiles'
 import { keysFor, MOD } from '../input/keymap'
 import { useInteraction } from '../stores/interaction'
 import { useRider } from '../stores/rider'
@@ -13,9 +12,11 @@ import type { MenuItem } from './contextMenu'
 import FixtureIcon from './FixtureIcon.vue'
 import InlineRename from './InlineRename.vue'
 import SidebarSection from './SidebarSection.vue'
+import { useCatalog } from '../stores/catalog'
 
 const store = useVenues()
 const rig = useRig()
+const catalog = useCatalog()
 const interaction = useInteraction()
 const transfer = useTransfer()
 const riderImport = useRider()
@@ -26,7 +27,7 @@ const fixturesTip = `Click a light to select it. ${MOD}-click adds or removes on
 
 /** The fixture type, shown when hovering a row. */
 function typeName(f: Fixture) {
-  const profile = profileFor(f.profileId)
+  const profile = catalog.profileFor(f.profileId)
   return profile.manufacturer === 'Generic' ? profile.name : `${profile.manufacturer} ${profile.name}`
 }
 
@@ -49,7 +50,7 @@ const shown = computed(() => {
   const words = filter.value.toLowerCase().split(/\s+/).filter(Boolean)
   if (!words.length) return rig.fixtures
   return rig.fixtures.filter((f) => {
-    const profile = profileFor(f.profileId)
+    const profile = catalog.profileFor(f.profileId)
     const text = `${f.name} ${profile.manufacturer} ${profile.name}`.toLowerCase()
     return words.every((w) => text.includes(w))
   })

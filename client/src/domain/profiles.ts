@@ -1,6 +1,5 @@
-import { ref } from 'vue'
 import type { CatalogFixture, CatalogMode } from '@preflight/shared'
-import { lensStrip, modelFor, type ModelSpec } from '../scene/fixtureModel'
+import { lensStrip, modelFor, type ModelSpec } from './fixtureBody'
 
 /**
  * Fixture profiles describe what a light can do and how its normalized (0..1, DMX-like)
@@ -135,22 +134,6 @@ export function profileFromCatalog(item: CatalogFixture): FixtureProfile {
     ...(item.sizeMm ? { sizeMm: item.sizeMm } : {}),
     modes: item.modes,
   }
-}
-
-const catalogProfiles = new Map<string, FixtureProfile>()
-/** Bumped when the catalog is loaded, so anything that looked up a profile before can look again. */
-export const profilesVersion = ref(0)
-
-export function registerCatalog(items: readonly CatalogFixture[]) {
-  catalogProfiles.clear()
-  for (const item of items) catalogProfiles.set(item.id, profileFromCatalog(item))
-  profilesVersion.value++
-}
-
-/** The profile for a fixture; fixtures whose profile is not in the catalog (yet) fall back to the generic moving head. */
-export function profileFor(id: string): FixtureProfile {
-  void profilesVersion.value // makes computed values that call this update when the catalog arrives
-  return catalogProfiles.get(id) ?? GENERIC_MOVING_HEAD
 }
 
 /** Pan or tilt in degrees from a normalized value, centered on 0 at the home position. */

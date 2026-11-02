@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import type { Fixture } from '@preflight/shared'
-import { profileFor } from '../fixtures/profiles'
+import { useCatalog } from '../stores/catalog'
 
 /** A light in the lists: the outline of its body type (as drawn in the view), in its color, as bright as its dimmer. */
 const props = defineProps<{ fixture: Fixture }>()
+const catalog = useCatalog()
 
-const profile = computed(() => profileFor(props.fixture.profileId))
+const profile = computed(() => catalog.profileFor(props.fixture.profileId))
 const color = computed(() => {
   const v = props.fixture.values
   if (!profile.value.emitsLight) return 'var(--text-dim)'
