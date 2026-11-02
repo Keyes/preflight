@@ -181,6 +181,7 @@ function loadPose(venueId: string): CameraState | undefined {
   } catch {
     /* unreadable or unavailable storage: start from the default view */
   }
+  return undefined
 }
 
 function savePose(venueId: string, state: CameraState) {
