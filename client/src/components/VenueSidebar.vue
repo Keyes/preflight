@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useAutosave } from '../stores/autosave'
 import { useCrowd } from '../stores/crowd'
 import { useLayout, type SidebarTab } from '../stores/layout'
 import { useRig } from '../stores/rig'
@@ -14,6 +15,7 @@ import ModelTags from './ModelTags.vue'
 import ViewsPanel from './ViewsPanel.vue'
 
 const store = useVenues()
+const autosave = useAutosave()
 const venueBox = useVenueBox()
 const layout = useLayout()
 const rig = useRig()
@@ -77,6 +79,7 @@ const sizeText = computed(() =>
       />
     </p>
     <p v-if="store.error" class="error">{{ store.error }}</p>
+    <p v-if="autosave.problem" class="error" role="status">Changes not saved yet: {{ autosave.problem }}. Trying again…</p>
 
     <!-- The venue's contents in three pages. Hidden pages stay mounted (v-show), so they keep their scroll position and filter. -->
     <nav v-if="store.current?.status === 'ready'" class="tabs" role="tablist" aria-label="Venue contents">

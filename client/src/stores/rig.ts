@@ -5,18 +5,18 @@ import type { Fixture, FixtureGroup } from '@preflight/shared'
 import { GENERIC_ID, GENERIC_MOVING_HEAD, profileFor } from '../fixtures/profiles'
 import type { AimPatch } from '../scene/aim'
 import type { RotationReadout } from '../scene/SelectionGizmo'
+import { partKey, useAutosave } from './autosave'
 import { FixtureHistory } from './fixtureHistory'
 import { useInteraction } from './interaction'
 import { useLayout } from './layout'
 import { useVenues } from './venues'
-
-const SAVE_DELAY_MS = 400
 
 /** The lights placed in the current venue, with their selection, undo, aiming and placing. */
 export const useRig = defineStore('rig', () => {
   const venues = useVenues()
   const layout = useLayout()
   const interaction = useInteraction()
+  const autosave = useAutosave()
   /** The selected fixtures, in the order they were selected. */
   const selectedIds = ref<string[]>([])
   /** The selected fixture when exactly one is selected (what single-light editing works on). */
@@ -27,42 +27,26 @@ export const useRig = defineStore('rig', () => {
   const gizmoMode = ref<'move' | 'rotate'>('move')
   /** Shown next to the pointer while a rotation ring is being dragged. */
   const rotationReadout = ref<RotationReadout | null>(null)
-  const error = ref<string | null>(null)
 
   const fixtures = computed(() => venues.current?.fixtures ?? [])
   const selected = computed(() => fixtures.value.find((f) => f.id === selectedId.value))
   /** All selected fixtures, in selection order. */
   const selection = computed(() => selectedIds.value.map((id) => fixtures.value.find((f) => f.id === id)).filter((f): f is Fixture => !!f))
 
-  // Edits apply to local state immediately and are saved shortly after the last change.
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let pendingVenueId: string | null = null
-
+  /** Edits apply to the venue at once; its lights and groups are saved a moment after the last change (see autosave.ts). */
   function schedulePersist() {
-    pendingVenueId = venues.currentId
-    clearTimeout(timer)
-    timer = setTimeout(flush, SAVE_DELAY_MS)
+    const id = venues.currentId
+    if (!id) return
+    autosave.schedule(partKey(id, 'lights'), () => {
+      const venue = venues.venues.find((v) => v.id === id)
+      return venue ? api.saveFixtures(id, venue.fixtures ?? [], venue.groups ?? []) : Promise.resolve()
+    })
   }
 
-  async function flush() {
-    clearTimeout(timer)
-    const id = pendingVenueId
-    pendingVenueId = null
-    const venue = venues.venues.find((v) => v.id === id)
-    if (!venue) return
-    try {
-      await api.saveFixtures(venue.id, venue.fixtures ?? [], venue.groups ?? [])
-      error.value = null
-    } catch (e) {
-      error.value = (e as Error).message
-    }
-  }
-
-  // Leaving a venue: save its pending edits first, and drop selection.
+  // Leaving a venue drops the selection (its edits are saved all the same).
   watch(
     () => venues.currentId,
     () => {
-      if (pendingVenueId) void flush()
       selectedIds.value = []
       pickerOpen.value = false
       aim.anchor = null
@@ -570,7 +554,6 @@ export const useRig = defineStore('rig', () => {
     placeAt,
     gizmoMode,
     rotationReadout,
-    error,
     add,
     update,
     setValue,
@@ -578,6 +561,5 @@ export const useRig = defineStore('rig', () => {
     remove,
     duplicate,
     togglePlacing,
-    flush,
   }
 })

@@ -78,6 +78,12 @@ export function setStoreState(page: Page, id: string, values: Record<string, unk
   )
 }
 
+/** A venue as the server has it: what has been saved. */
+export async function venueOnServer(page: Page, venueId: string) {
+  const response = await page.request.get(`/api/venues/${venueId}`)
+  return (await response.json()) as { fixtures?: unknown[]; hiddenTags?: string[] }
+}
+
 /** The lights of a venue as the app holds them. */
 export async function lightsOf(page: Page, venueId: string) {
   const { venues } = await storeState<{

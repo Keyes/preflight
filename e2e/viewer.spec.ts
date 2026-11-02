@@ -10,6 +10,7 @@ import {
   rounded,
   setStoreState,
   storeState,
+  venueOnServer,
   type DevWindow,
   type Vec3,
 } from './viewer.js'
@@ -91,6 +92,8 @@ test('placing: the light chosen in the picker stands where the floor is clicked'
   const placed = (await lightsOf(page, venueId)).at(-1)!
   expect(placed.mount).toBe('standing')
   expect(rounded(placed.position, 0)).toEqual([1, 0, 2])
+  // saved a moment later
+  await expect.poll(async () => (await venueOnServer(page, venueId)).fixtures?.length).toBe(19)
 })
 
 test('a crowd zone is drawn with two clicks on the floor', async ({ page }) => {
@@ -120,8 +123,10 @@ test('hiding a model part takes its meshes out of the picture, and showing it br
     .first()
     .click()
   await expect.poll(enabled).toBeLessThan(all)
+  await expect.poll(async () => (await venueOnServer(page, venueId)).hiddenTags?.length).toBe(1) // saved with the venue
   await page.getByRole('button', { name: 'Show all' }).click()
   await expect.poll(enabled).toBe(all)
+  await expect.poll(async () => (await venueOnServer(page, venueId)).hiddenTags?.length).toBe(0)
 })
 
 test('a screenshot is the view as a PNG of the size asked for', async ({ page }) => {

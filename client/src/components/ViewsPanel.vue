@@ -10,7 +10,6 @@ import SidebarSection from './SidebarSection.vue'
 const store = useVenues()
 const bridge = useCameraBridge()
 
-const error = ref<string | null>(null)
 const menu = ref<{ x: number; y: number; id: string } | null>(null)
 const renamingId = ref<string | null>(null)
 const renameText = ref('')
@@ -20,17 +19,12 @@ function newId() {
   return crypto.randomUUID()
 }
 
-async function saveCurrent() {
+function saveCurrent() {
   const state = bridge.api?.getState()
   if (!state) return
   const view: CameraView = { id: newId(), name: `View ${store.currentViews.length + 1}`, ...state }
-  error.value = null
-  try {
-    await store.setViews([...store.currentViews, view])
-    void startRename(view)
-  } catch (e) {
-    error.value = (e as Error).message
-  }
+  store.setViews([...store.currentViews, view])
+  void startRename(view)
 }
 
 function jump(view: CameraView) {
@@ -47,8 +41,8 @@ function menuItems(id: string): MenuItem[] {
   if (!view) return []
   return [
     { label: 'Rename', action: () => void startRename(view) },
-    { label: 'Update to current camera', action: () => void updateToCurrent(id) },
-    { label: 'Delete', danger: true, action: () => void remove(id) },
+    { label: 'Update to current camera', action: () => updateToCurrent(id) },
+    { label: 'Delete', danger: true, action: () => remove(id) },
   ]
 }
 
@@ -60,32 +54,23 @@ async function startRename(view: CameraView) {
   renameInput.value?.[0]?.select()
 }
 
-async function commitRename() {
+function commitRename() {
   const id = renamingId.value
   if (!id) return
   renamingId.value = null // also guards against the blur that follows Enter
   const name = renameText.value.trim()
   const view = store.currentViews.find((v) => v.id === id)
   if (!view || !name || name === view.name) return
-  await mutate((views) => views.map((v) => (v.id === id ? { ...v, name } : v)))
+  store.setViews(store.currentViews.map((v) => (v.id === id ? { ...v, name } : v)))
 }
 
-async function updateToCurrent(id: string) {
+function updateToCurrent(id: string) {
   const state = bridge.api?.getState()
-  if (state) await mutate((views) => views.map((v) => (v.id === id ? { ...v, ...state } : v)))
+  if (state) store.setViews(store.currentViews.map((v) => (v.id === id ? { ...v, ...state } : v)))
 }
 
-async function remove(id: string) {
-  await mutate((views) => views.filter((v) => v.id !== id))
-}
-
-async function mutate(change: (views: CameraView[]) => CameraView[]) {
-  error.value = null
-  try {
-    await store.setViews(change(store.currentViews))
-  } catch (e) {
-    error.value = (e as Error).message
-  }
+function remove(id: string) {
+  store.setViews(store.currentViews.filter((v) => v.id !== id))
 }
 </script>
 
@@ -98,8 +83,6 @@ async function mutate(change: (views: CameraView[]) => CameraView[]) {
     :count="store.currentViews.length || undefined"
   >
     <template #actions><button class="link" @click="saveCurrent">+ Save current</button></template>
-
-    <p v-if="error" class="error">{{ error }}</p>
 
     <ul>
       <li v-for="(view, i) in store.currentViews" :key="view.id" @contextmenu="openMenu($event, view.id)">
@@ -181,11 +164,6 @@ kbd {
   padding: 7px 9px;
   border-radius: 4px;
   font: inherit;
-}
-.error {
-  margin: 0;
-  color: var(--danger);
-  font-size: 13px;
 }
 .hint {
   margin: 0;

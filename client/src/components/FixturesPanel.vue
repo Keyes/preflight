@@ -145,8 +145,6 @@ function commitRename(id: string, value: string) {
       </button>
     </template>
 
-    <p v-if="rig.error" class="error">{{ rig.error }}</p>
-
     <input
       v-if="rig.fixtures.length > FILTER_FROM"
       v-model="filter"
@@ -277,11 +275,6 @@ li > button.active {
 .hint {
   margin: 0;
   color: var(--text-muted);
-  font-size: 13px;
-}
-.error {
-  margin: 0;
-  color: var(--danger);
   font-size: 13px;
 }
 </style>

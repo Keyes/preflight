@@ -19,7 +19,7 @@ const partsTip =
 
 function showAll() {
   // keeps hidden names this model no longer has, as switching each tag on by itself did
-  void venues.setHiddenTags([...hidden.value].filter((t) => !box.tags.includes(t)))
+  venues.setHiddenTags([...hidden.value].filter((t) => !box.tags.includes(t)))
 }
 </script>
 
